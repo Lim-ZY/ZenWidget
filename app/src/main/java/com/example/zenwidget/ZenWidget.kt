@@ -99,7 +99,7 @@ class ZenWidget : GlanceAppWidget() {
         val context = LocalContext.current
 
         LongTextLayout(
-            title = context.getString(R.string.sample_long_text_app_widget_name),
+            title = "ZenWidget",
             titleIconRes = R.drawable.sample_text_icon,
             titleBarActionIconRes = R.drawable.sample_refresh_icon,
             titleBarActionIconContentDescription = context.getString(
