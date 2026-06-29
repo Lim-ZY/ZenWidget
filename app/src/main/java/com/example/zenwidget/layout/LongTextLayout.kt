@@ -81,6 +81,9 @@ fun LongTextLayout(
     @DrawableRes titleBarActionIconRes: Int? = null,
     titleBarActionIconContentDescription: String? = null,
     titleBarAction: (() -> Unit)? = null,
+    @DrawableRes switchRepoIconRes: Int? = null,
+    switchRepoIconContentDescription: String? = null,
+    switchRepoAction: (() -> Unit)? = null,
     data: LongTextLayoutData,
     action: Action? = null,
 ) {
@@ -111,7 +114,10 @@ fun LongTextLayout(
                         title,
                         titleBarAction,
                         titleBarActionIconRes,
-                        titleBarActionIconContentDescription
+                        titleBarActionIconContentDescription,
+                        switchRepoAction,
+                        switchRepoIconRes,
+                        switchRepoIconContentDescription
                     )
                 }
             },
@@ -133,6 +139,9 @@ private fun TitleBarContent(
     titleBarAction: (() -> Unit)?,
     titleBarActionIconRes: Int?,
     titleBarActionIconContentDescription: String?,
+    switchRepoAction: (() -> Unit)?,
+    switchRepoIconRes: Int?,
+    switchRepoIconContentDescription: String?,
 ) {
     TitleBar(
         startIcon = ImageProvider(titleIconRes),
@@ -147,6 +156,16 @@ private fun TitleBarContent(
                     contentColor = GlanceTheme.colors.secondary,
                     backgroundColor = null, // transparent
                     onClick = titleBarAction
+                )
+            }
+
+            if (switchRepoAction != null && switchRepoIconRes != null) {
+                CircleIconButton(
+                    imageProvider = ImageProvider(switchRepoIconRes),
+                    contentDescription = switchRepoIconContentDescription,
+                    contentColor = GlanceTheme.colors.secondary,
+                    backgroundColor = null,
+                    onClick = switchRepoAction
                 )
             }
         }

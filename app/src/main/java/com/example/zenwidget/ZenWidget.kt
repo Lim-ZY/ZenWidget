@@ -60,7 +60,8 @@ class ZenWidget : GlanceAppWidget() {
             GlanceTheme {
                 LongTextAppWidgetContent(
                     data = data,
-                    refreshDataAction = { repo.refresh() }
+                    refreshDataAction = { repo.refresh() },
+                    switchRepoAction = { repo.switchRepo() }
                 )
             }
 //            ZenContent()
@@ -95,6 +96,7 @@ class ZenWidget : GlanceAppWidget() {
     fun LongTextAppWidgetContent(
         data: LongTextLayoutData,
         refreshDataAction: () -> Unit,
+        switchRepoAction: () -> Unit,
     ) {
         val context = LocalContext.current
 
@@ -106,6 +108,9 @@ class ZenWidget : GlanceAppWidget() {
                 R.string.sample_refresh_icon_button_label
             ),
             titleBarAction = refreshDataAction,
+            switchRepoIconRes = R.drawable.sample_arrow_right_icon,
+            switchRepoIconContentDescription = "Switch Repository",
+            switchRepoAction = switchRepoAction,
             data = data,
             action = actionStartDemoActivity(data.key),
         )

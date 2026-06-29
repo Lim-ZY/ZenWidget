@@ -9,10 +9,16 @@ import com.example.zenwidget.layout.computeIfAbsent as computeIfAbsentExt
  * An fake in-memory repository to provide data for displaying different demo samples in
  * [com.example.zenwidget.layout.LongTextLayout]
  */
+enum class RepoType {
+    QUOTES,
+    ACTIONS
+}
+
 class Repository {
+    private var activeRepo: RepoType = RepoType.QUOTES
     private var itemIndex: Int = 0
     private var itemsCount: Int = 0
-    private val data = MutableStateFlow(demoItems[0])
+    private val data = MutableStateFlow(quotesList[0])
 
     fun data(): Flow<LongTextLayoutData> = data
 
@@ -27,10 +33,25 @@ class Repository {
         this.load()
     }
 
+    fun switchRepo() {
+        activeRepo = when (activeRepo) {
+            RepoType.QUOTES -> RepoType.ACTIONS
+            RepoType.ACTIONS -> RepoType.QUOTES
+        }
+
+        itemIndex = 0
+        this.load()
+    }
+
     /** Loads the data and updates the flow */
     fun load(): LongTextLayoutData {
-        itemsCount = demoItems.size
-        data.value = demoItems[itemIndex]
+        val currentList = when (activeRepo) {
+            RepoType.QUOTES -> quotesList
+            RepoType.ACTIONS -> actionList
+        }
+
+        itemsCount = currentList.size
+        data.value = currentList[itemIndex]
 
         return data.value
     }
@@ -58,8 +79,7 @@ class Repository {
             }
         }
 
-        // Lorem ipsum text generated with https://loremipsum.io/
-        val demoItems = listOf(
+        val quotesList = listOf(
             LongTextLayoutData(
                 key = "item 0",
                 text = "This is allows for a longer text string. Specifically because the focus in this, layout is on the primary text.",
@@ -83,6 +103,34 @@ class Repository {
             LongTextLayoutData(
                 key = "item 4",
                 text = "Dolor sit amet consectetur adipiscing elit duis tristique sollicitudin nibh sit amet commodo nulla facilisi nullam.",
+                caption = "Amet cursus"
+            ),
+        )
+
+        val actionList = listOf(
+            LongTextLayoutData(
+                key = "item 0",
+                text = "Observe your senses",
+                caption = "Caption",
+            ),
+            LongTextLayoutData(
+                key = "item 1",
+                text = "Drink some water",
+                caption = "Ut mollis",
+            ),
+            LongTextLayoutData(
+                key = "item 2",
+                text = "Clear your table",
+                caption = "Ipsum faucibus",
+            ),
+            LongTextLayoutData(
+                key = "item 3",
+                text = "Breathe",
+                caption = "Amet cursus"
+            ),
+            LongTextLayoutData(
+                key = "item 4",
+                text = "Rest your eyes",
                 caption = "Amet cursus"
             ),
         )
