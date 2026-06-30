@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import com.example.zenwidget.data.AppDatabase
 import com.example.zenwidget.data.RepoType
 import com.example.zenwidget.ui.theme.GlassCard
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 
 @Composable
 fun ZenMainScreen() {
@@ -32,18 +34,25 @@ fun ZenMainScreen() {
     // Room's Flow automatically updates this list whenever the DB changes
     val currentItems by dao.getItemsForRepo(selectedRepo).collectAsState(initial = emptyList())
 
+    val backdrop = rememberLayerBackdrop()
+
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.pexels_tree_bg), // Set your background here
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .layerBackdrop(backdrop)
         )
 
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                GlassCard(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    backdrop = backdrop
+                ) {
                     Text(
                         text = if (selectedRepo == RepoType.QUOTES) "Quotes" else "1-min Actions",
                         color = Color.White,
@@ -54,7 +63,10 @@ fun ZenMainScreen() {
             },
             bottomBar = {
                 if (!isAddingItem) {
-                    GlassCard(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                    GlassCard(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        backdrop = backdrop
+                    ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
@@ -91,6 +103,7 @@ fun ZenMainScreen() {
             Box(modifier = Modifier.padding(paddingValues)) {
                 if (isAddingItem) {
                     AddItemScreen(
+                        backdrop = backdrop,
                         selectedRepo = selectedRepo,
                         dao = dao,
                         onComplete = { isAddingItem = false }
@@ -102,7 +115,10 @@ fun ZenMainScreen() {
                         modifier = Modifier.fillMaxSize()
                     ) {
                         items(currentItems) { item ->
-                            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                            GlassCard(
+                                modifier = Modifier.fillMaxWidth(),
+                                backdrop = backdrop
+                            ) {
                                 Column {
                                     Text(
                                         text = item.caption,

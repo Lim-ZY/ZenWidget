@@ -36,10 +36,12 @@ import com.example.zenwidget.data.RepoItem
 import com.example.zenwidget.data.RepoType
 import com.example.zenwidget.data.ZenDao
 import com.example.zenwidget.ui.theme.GlassCard
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import kotlinx.coroutines.launch
 
 @Composable
 fun AddItemScreen(
+    backdrop: LayerBackdrop,
     selectedRepo: RepoType,
     dao: ZenDao,
     onComplete: () -> Unit
@@ -58,7 +60,9 @@ fun AddItemScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.Center
     ) {
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
+        GlassCard(
+            modifier = Modifier.fillMaxWidth(),
+            backdrop = backdrop) {
             Column {
                 Text("Add to Widget", color = Color.White, style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.height(24.dp))
