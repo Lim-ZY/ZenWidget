@@ -79,7 +79,7 @@ class Repository {
             }
         }
 
-        val quotesList = listOf(
+        val quotesList = mutableListOf(
             LongTextLayoutData(
                 key = "item 0",
                 text = "This is allows for a longer text string. Specifically because the focus in this, layout is on the primary text.",
@@ -107,7 +107,7 @@ class Repository {
             ),
         )
 
-        val actionList = listOf(
+        val actionList = mutableListOf(
             LongTextLayoutData(
                 key = "item 0",
                 text = "Observe your senses",
