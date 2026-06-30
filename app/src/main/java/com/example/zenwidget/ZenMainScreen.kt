@@ -7,10 +7,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -69,12 +72,14 @@ fun ZenMainScreen() {
             containerColor = Color.Transparent,
             topBar = {
                 GlassCard(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    modifier = Modifier
+                        .windowInsetsPadding(WindowInsets.statusBars)
+                        .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
                     backdrop = backdrop
                 ) {
                     Text(
                         text = if (selectedRepo == RepoType.QUOTES) "Quotes" else "1-min Actions",
-                        color = Color.White,
+                        color = Color.Blue.copy(alpha = 0.5f),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -88,18 +93,20 @@ fun ZenMainScreen() {
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             TextButton(onClick = { selectedRepo = RepoType.QUOTES }) {
                                 Text(
                                     "Quotes",
-                                    color = if (selectedRepo == RepoType.QUOTES) Color.White else Color.White.copy(alpha = 0.5f)
+                                    color = if (selectedRepo == RepoType.QUOTES) Color.White else Color.White.copy(alpha = 0.5f),
+                                    style = MaterialTheme.typography.titleLarge
                                 )
                             }
                             TextButton(onClick = { selectedRepo = RepoType.ACTIONS }) {
                                 Text(
                                     "1-min Actions",
-                                    color = if (selectedRepo == RepoType.ACTIONS) Color.White else Color.White.copy(alpha = 0.5f)
+                                    color = if (selectedRepo == RepoType.ACTIONS) Color.White else Color.White.copy(alpha = 0.5f),
+                                    style = MaterialTheme.typography.titleLarge
                                 )
                             }
                         }
@@ -140,15 +147,15 @@ fun ZenMainScreen() {
                             ) {
                                 Column {
                                     Text(
-                                        text = item.caption,
-                                        color = Color.White.copy(alpha = 0.7f),
-                                        style = MaterialTheme.typography.labelMedium
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
                                         text = item.text,
                                         color = Color.White,
                                         style = MaterialTheme.typography.bodyLarge
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = item.caption,
+                                        color = Color.White.copy(alpha = 0.7f),
+                                        style = MaterialTheme.typography.labelMedium
                                     )
                                 }
                             }
