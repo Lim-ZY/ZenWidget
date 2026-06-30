@@ -35,6 +35,7 @@ import androidx.glance.action.clickable
 import androidx.glance.appwidget.components.CircleIconButton
 import androidx.glance.appwidget.components.Scaffold
 import androidx.glance.appwidget.components.TitleBar
+import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -177,31 +178,29 @@ private fun TextStack(
     data: LongTextLayoutData,
     verticalAlignment: Alignment.Vertical,
 ) {
-    Column(
+    LazyColumn(
         modifier = GlanceModifier.fillMaxSize(),
-        verticalAlignment = verticalAlignment
     ) {
-        val primaryTextFontSizeAndMaxLines = primaryTextFontSizeAndMaxLines(data.text)
-        val captionFontSizeAndMaxLines =
-            captionFontSizeAndMaxLines(primaryTextFontSizeAndMaxLines.first)
-        // Caption
-        Text(
-            text = data.caption,
-            style = TextStyle(
-                fontSize = captionFontSizeAndMaxLines.first,
-                color = GlanceTheme.colors.secondary
-            ),
-            maxLines = captionFontSizeAndMaxLines.second
-        )
-        // Primary text
-        Text(
-            text = data.text,
-            style = TextStyle(
-                color = GlanceTheme.colors.onSurface,
-                fontSize = primaryTextFontSizeAndMaxLines.first
-            ),
-            maxLines = primaryTextFontSizeAndMaxLines.second
-        )
+        item {
+            // Caption
+            Text(
+                text = data.caption,
+                style = TextStyle(
+                    fontSize = 16.sp,
+                    color = GlanceTheme.colors.secondary
+                ),
+            )
+        }
+        item {
+            // Primary text
+            Text(
+                text = data.text,
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSurface,
+                    fontSize = 30.sp
+                ),
+            )
+        }
     }
 }
 
