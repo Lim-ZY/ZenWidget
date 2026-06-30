@@ -80,10 +80,10 @@ fun LongTextLayout(
     @DrawableRes titleIconRes: Int,
     @DrawableRes titleBarActionIconRes: Int? = null,
     titleBarActionIconContentDescription: String? = null,
-    titleBarAction: (() -> Unit)? = null,
+    titleBarAction: Action? = null,
     @DrawableRes switchRepoIconRes: Int? = null,
     switchRepoIconContentDescription: String? = null,
-    switchRepoAction: (() -> Unit)? = null,
+    switchRepoAction: Action? = null,
     data: LongTextLayoutData,
     action: Action? = null,
 ) {
@@ -136,10 +136,10 @@ fun LongTextLayout(
 private fun TitleBarContent(
     titleIconRes: Int,
     title: String,
-    titleBarAction: (() -> Unit)?,
+    titleBarAction: Action?,
     titleBarActionIconRes: Int?,
     titleBarActionIconContentDescription: String?,
-    switchRepoAction: (() -> Unit)?,
+    switchRepoAction: Action?,
     switchRepoIconRes: Int?,
     switchRepoIconContentDescription: String?,
 ) {
@@ -366,7 +366,6 @@ private fun LongTextLayoutPreview(text: String, caption: String) {
         titleBarActionIconContentDescription = context.getString(
             R.string.sample_refresh_icon_button_label
         ),
-        titleBarAction = {},
         data = LongTextLayoutData(
             key = "1",
             text = text,

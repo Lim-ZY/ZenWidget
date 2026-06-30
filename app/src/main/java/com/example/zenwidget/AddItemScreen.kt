@@ -33,13 +33,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.updateAll
 import com.example.zenwidget.data.RepoItem
+import com.example.zenwidget.data.RepoType
 import com.example.zenwidget.data.ZenDao
 import com.example.zenwidget.ui.theme.GlassCard
 import kotlinx.coroutines.launch
 
 @Composable
 fun AddItemScreen(
-    selectedRepo: Int,
+    selectedRepo: RepoType,
     dao: ZenDao,
     onComplete: () -> Unit
 ) {
@@ -68,6 +69,7 @@ fun AddItemScreen(
                     style = MaterialTheme.typography.labelMedium
                 )
                 Spacer(modifier = Modifier.height(8.dp))
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -78,14 +80,14 @@ fun AddItemScreen(
                 ) {
                     // Option 1
                     TextButton(
-                        onClick = { targetRepo = 0 },
+                        onClick = { targetRepo = RepoType.QUOTES },
                         modifier = Modifier
                             .weight(1f)
-                            .background(if (targetRepo == 0) Color.White.copy(alpha = 0.25f) else Color.Transparent)
+                            .background(if (targetRepo == RepoType.QUOTES) Color.White.copy(alpha = 0.25f) else Color.Transparent)
                     ) {
                         Text(
                             text = "Quotes",
-                            color = if (targetRepo == 0) Color.White else Color.White.copy(alpha = 0.5f)
+                            color = if (targetRepo == RepoType.QUOTES) Color.White else Color.White.copy(alpha = 0.5f)
                         )
                     }
 
@@ -99,14 +101,14 @@ fun AddItemScreen(
 
                     // Option 2
                     TextButton(
-                        onClick = { targetRepo = 1 },
+                        onClick = { targetRepo = RepoType.ACTIONS },
                         modifier = Modifier
                             .weight(1f)
-                            .background(if (targetRepo == 1) Color.White.copy(alpha = 0.25f) else Color.Transparent)
+                            .background(if (targetRepo == RepoType.ACTIONS) Color.White.copy(alpha = 0.25f) else Color.Transparent)
                     ) {
                         Text(
                             text = "1-min Actions",
-                            color = if (targetRepo == 1) Color.White else Color.White.copy(alpha = 0.5f)
+                            color = if (targetRepo == RepoType.ACTIONS) Color.White else Color.White.copy(alpha = 0.5f)
                         )
                     }
                 }

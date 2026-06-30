@@ -17,6 +17,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.zenwidget.data.AppDatabase
+import com.example.zenwidget.data.RepoType
 import com.example.zenwidget.ui.theme.GlassCard
 
 @Composable
@@ -25,7 +26,7 @@ fun ZenMainScreen() {
     val database = AppDatabase.getDatabase(context)
     val dao = database.zenDao()
 
-    var selectedRepo by remember { mutableStateOf(0) }
+    var selectedRepo by remember { mutableStateOf(RepoType.QUOTES) }
     var isAddingItem by remember { mutableStateOf(false) }
 
     // Room's Flow automatically updates this list whenever the DB changes
@@ -44,7 +45,7 @@ fun ZenMainScreen() {
             topBar = {
                 GlassCard(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                     Text(
-                        text = if (selectedRepo == 0) "Quotes" else "1-min Actions",
+                        text = if (selectedRepo == RepoType.QUOTES) "Quotes" else "1-min Actions",
                         color = Color.White,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
@@ -58,16 +59,16 @@ fun ZenMainScreen() {
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            TextButton(onClick = { selectedRepo = 0 }) {
+                            TextButton(onClick = { selectedRepo = RepoType.QUOTES }) {
                                 Text(
                                     "Quotes",
-                                    color = if (selectedRepo == 0) Color.White else Color.White.copy(alpha = 0.5f)
+                                    color = if (selectedRepo == RepoType.QUOTES) Color.White else Color.White.copy(alpha = 0.5f)
                                 )
                             }
-                            TextButton(onClick = { selectedRepo = 1 }) {
+                            TextButton(onClick = { selectedRepo = RepoType.ACTIONS }) {
                                 Text(
                                     "1-min Actions",
-                                    color = if (selectedRepo == 1) Color.White else Color.White.copy(alpha = 0.5f)
+                                    color = if (selectedRepo == RepoType.ACTIONS) Color.White else Color.White.copy(alpha = 0.5f)
                                 )
                             }
                         }

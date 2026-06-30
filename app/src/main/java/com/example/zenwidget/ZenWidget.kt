@@ -38,20 +38,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class ZenWidget : GlanceAppWidget() {
-    companion object {
-        val countKey = intPreferencesKey("count")
-    }
-
     override val sizeMode: SizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(
         context: Context,
         id: GlanceId
     ) {
-        val repo = Repository.getRepo(id)
+        val repo = Repository.getRepo(id, context)
 
         val initialData = withContext(Dispatchers.Default) {
-            repo.load()
+            repo.loadFromDb()
         }
 
         provideContent {
@@ -60,43 +56,18 @@ class ZenWidget : GlanceAppWidget() {
             GlanceTheme {
                 LongTextAppWidgetContent(
                     data = data,
-                    refreshDataAction = { repo.refresh() },
-                    switchRepoAction = { repo.switchRepo() }
+                    refreshDataAction = actionRunCallback<RefreshActionCallback>(),
+                    switchRepoAction = actionRunCallback<SwitchRepoActionCallback>()
                 )
             }
-//            ZenContent()
         }
     }
 
-//    @Composable
-//    private fun ZenContent() {
-//        val count = currentState(key = countKey) ?: 0
-//        Column(
-//            modifier = GlanceModifier
-//                .fillMaxSize()
-//                .background(Color.DarkGray),
-//            verticalAlignment = Alignment.Vertical.CenterVertically,
-//            horizontalAlignment = Alignment.Horizontal.CenterHorizontally
-//        ) {
-//            Text(
-//                text = count.toString(),
-//                style = TextStyle(
-//                    fontWeight = FontWeight.Medium,
-//                    color = ColorProvider(Color.White, Color.White),
-//                    fontSize = 26.sp
-//                )
-//            )
-//            Button(
-//                text = "^",
-//                onClick = actionRunCallback(IncrementActionCallback::class.java)
-//            )
-//        }
-//    }
     @Composable
     fun LongTextAppWidgetContent(
         data: LongTextLayoutData,
-        refreshDataAction: () -> Unit,
-        switchRepoAction: () -> Unit,
+        refreshDataAction: Action,
+        switchRepoAction: Action,
     ) {
         val context = LocalContext.current
 
@@ -117,24 +88,22 @@ class ZenWidget : GlanceAppWidget() {
     }
 }
 
+class RefreshActionCallback : ActionCallback {
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
+        val repo = Repository.getRepo(glanceId, context)
+        repo.refresh()
+        ZenWidget().update(context, glanceId)
+    }
+}
+
+class SwitchRepoActionCallback : ActionCallback {
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
+        val repo = Repository.getRepo(glanceId, context)
+        repo.switchRepo()
+        ZenWidget().update(context, glanceId)
+    }
+}
+
 class ZenReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = ZenWidget()
 }
-//
-//object IncrementActionCallback: ActionCallback {
-//    override suspend fun onAction(
-//        context: Context,
-//        glanceId: GlanceId,
-//        parameters: ActionParameters
-//    ) {
-//        updateAppWidgetState(context, glanceId) { prefs ->
-//            val currentCount = prefs[ZenWidget.countKey]
-//            if (currentCount != null) {
-//                prefs[ZenWidget.countKey] = currentCount + 1
-//            } else {
-//                prefs[ZenWidget.countKey] = 1
-//            }
-//        }
-//        ZenWidget().update(context, glanceId)
-//    }
-//}
