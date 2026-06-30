@@ -9,6 +9,7 @@ import androidx.glance.GlanceTheme
 import androidx.glance.LocalContext
 import androidx.glance.action.Action
 import androidx.glance.action.ActionParameters
+import androidx.glance.action.actionStartActivity
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
@@ -18,7 +19,6 @@ import androidx.glance.appwidget.provideContent
 import com.example.zenwidget.data.Repository
 import com.example.zenwidget.layout.LongTextLayout
 import com.example.zenwidget.layout.LongTextLayoutData
-import com.example.zenwidget.utils.ActionUtils.actionStartDemoActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -68,7 +68,7 @@ class ZenWidget : GlanceAppWidget() {
             switchRepoIconContentDescription = "Switch Repository",
             switchRepoAction = switchRepoAction,
             data = data,
-            action = actionStartDemoActivity(data.key),
+            action = actionStartActivity<MainActivity>(),
         )
     }
 }
