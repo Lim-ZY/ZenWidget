@@ -58,7 +58,7 @@ class ZenWidget : GlanceAppWidget() {
 
         LongTextLayout(
             title = "ZenWidget",
-            titleIconRes = R.drawable.sample_text_icon,
+            titleIconRes = R.drawable.sample_scrim_gradient,
             titleBarActionIconRes = R.drawable.sample_refresh_icon,
             titleBarActionIconContentDescription = context.getString(
                 R.string.sample_refresh_icon_button_label
