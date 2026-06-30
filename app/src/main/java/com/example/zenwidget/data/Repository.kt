@@ -2,14 +2,12 @@ package com.example.zenwidget.data
 
 import android.content.Context
 import androidx.glance.GlanceId
-import com.example.zenwidget.layout.LongTextLayout
 import com.example.zenwidget.layout.LongTextLayoutData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import com.example.zenwidget.layout.computeIfAbsent as computeIfAbsentExt
 
 /**
  * An fake in-memory repository to provide data for displaying different demo samples in
