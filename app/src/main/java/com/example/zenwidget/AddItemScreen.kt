@@ -1,5 +1,6 @@
 package com.example.zenwidget
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -50,6 +51,10 @@ fun AddItemScreen(
     dao: ZenDao,
     onComplete: () -> Unit
 ) {
+    BackHandler(enabled = true) {
+        onComplete()
+    }
+
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
