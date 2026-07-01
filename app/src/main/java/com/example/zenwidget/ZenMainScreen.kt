@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -30,6 +32,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,6 +46,7 @@ import com.example.zenwidget.data.RepoType
 import com.example.zenwidget.ui.theme.GlassCard
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import kotlinx.coroutines.launch
 
 @Composable
 fun ZenMainScreen() {
@@ -50,17 +54,17 @@ fun ZenMainScreen() {
     val database = AppDatabase.getDatabase(context)
     val dao = database.zenDao()
 
-    var selectedRepo by remember { mutableStateOf(RepoType.QUOTES) }
+    // 0 for Quotes, 1 for Actions
+    val pagerState = rememberPagerState(pageCount = { 2 })
+    val selectedRepo = if (pagerState.currentPage == 0) RepoType.QUOTES else RepoType.ACTIONS
     var isAddingItem by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
-    // Room's Flow automatically updates this list whenever the DB changes
-    val currentItems by dao.getItemsForRepo(selectedRepo).collectAsState(initial = emptyList())
-
-    val backdrop = rememberLayerBackdrop()
+    val backdrop = rememberLayerBackdrop() // For liquid glass API
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
-            painter = painterResource(id = R.drawable.pexels_sun_bg), // Set your background here
+            painter = painterResource(id = R.drawable.pexels_sun_bg),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier
@@ -95,7 +99,9 @@ fun ZenMainScreen() {
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            TextButton(onClick = { selectedRepo = RepoType.QUOTES }) {
+                            TextButton(onClick = {
+                                scope.launch { pagerState.animateScrollToPage(0) }
+                            }) {
                                 Text(
                                     "Quotes",
                                     color = if (selectedRepo == RepoType.QUOTES) Color.White else Color.White.copy(alpha = 0.5f),
@@ -103,7 +109,9 @@ fun ZenMainScreen() {
                                     fontWeight = FontWeight.Bold
                                 )
                             }
-                            TextButton(onClick = { selectedRepo = RepoType.ACTIONS }) {
+                            TextButton(onClick = {
+                                scope.launch { pagerState.animateScrollToPage(1) }
+                            }) {
                                 Text(
                                     "1-min Actions",
                                     color = if (selectedRepo == RepoType.ACTIONS) Color.White else Color.White.copy(alpha = 0.5f),
@@ -137,33 +145,42 @@ fun ZenMainScreen() {
                         onComplete = { isAddingItem = false }
                     )
                 } else {
-                    LazyColumn(
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    HorizontalPager(
+                        state = pagerState,
                         modifier = Modifier.fillMaxSize()
-                    ) {
-                        items(currentItems) { item ->
-                            GlassCard(
-                                modifier = Modifier.fillMaxWidth(),
-                                backdrop = backdrop
-                            ) {
-                                Column {
-                                    Text(
-                                        text = item.text,
-                                        color = Color.White,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = item.caption,
-                                        color = Color.White.copy(alpha = 0.9f),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Normal
-                                    )
+                    ) { page ->
+                        val currentRepo = if (page == 0) RepoType.QUOTES else RepoType.ACTIONS
+                        val currentItems by dao.getItemsForRepo(currentRepo).collectAsState(initial = emptyList())
+
+                        LazyColumn(
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(currentItems) { item ->
+                                GlassCard(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    backdrop = backdrop
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = item.text,
+                                            color = Color.White,
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = item.caption,
+                                            color = Color.White.copy(alpha = 0.9f),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Normal
+                                        )
+                                    }
                                 }
                             }
                         }
+
                     }
                 }
             }
