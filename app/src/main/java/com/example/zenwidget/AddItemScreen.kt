@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.updateAll
 import com.example.zenwidget.data.RepoItem
@@ -53,7 +54,6 @@ fun AddItemScreen(
     val coroutineScope = rememberCoroutineScope()
 
     var targetRepo by remember { mutableStateOf(selectedRepo) }
-
     var inputText by remember { mutableStateOf("") }
     var captionText by remember { mutableStateOf("") }
 
@@ -71,12 +71,18 @@ fun AddItemScreen(
             modifier = Modifier.fillMaxWidth(),
             backdrop = backdrop) {
             Column {
-                Text("Add to Widget", color = Color.White, style = MaterialTheme.typography.titleLarge)
+                Text(
+                    "Add to Widget",
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
                     text = "Target Repository",
-                    color = Color.White.copy(alpha = 0.7f),
+                    color = Color.White,
                     style = MaterialTheme.typography.labelMedium
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -86,7 +92,7 @@ fun AddItemScreen(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
                         .background(Color.White.copy(alpha = 0.1f))
-                        .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(12.dp)),
+                        .border(1.dp, Color.White.copy(alpha = 0.65f), RoundedCornerShape(12.dp)),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Option 1
@@ -94,11 +100,11 @@ fun AddItemScreen(
                         onClick = { targetRepo = RepoType.QUOTES },
                         modifier = Modifier
                             .weight(1f)
-                            .background(if (targetRepo == RepoType.QUOTES) Color.White.copy(alpha = 0.25f) else Color.Transparent)
+                            .background(if (targetRepo == RepoType.QUOTES) Color.White.copy(alpha = 0.4f) else Color.Transparent)
                     ) {
                         Text(
                             text = "Quotes",
-                            color = if (targetRepo == RepoType.QUOTES) Color.White else Color.White.copy(alpha = 0.5f)
+                            color = Color.White
                         )
                     }
 
@@ -115,11 +121,11 @@ fun AddItemScreen(
                         onClick = { targetRepo = RepoType.ACTIONS },
                         modifier = Modifier
                             .weight(1f)
-                            .background(if (targetRepo == RepoType.ACTIONS) Color.White.copy(alpha = 0.25f) else Color.Transparent)
+                            .background(if (targetRepo == RepoType.ACTIONS) Color.White.copy(alpha = 0.4f) else Color.Transparent)
                     ) {
                         Text(
                             text = "1-min Actions",
-                            color = if (targetRepo == RepoType.ACTIONS) Color.White else Color.White.copy(alpha = 0.5f)
+                            color = Color.White
                         )
                     }
                 }
@@ -127,9 +133,9 @@ fun AddItemScreen(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 OutlinedTextField(
-                    value = captionText,
-                    onValueChange = { captionText = it },
-                    label = { Text("Caption", color = Color.White) },
+                    value = inputText,
+                    onValueChange = { inputText = it },
+                    label = { Text("Main Text", color = Color.White) },
                     modifier = Modifier.fillMaxWidth(),
                     colors = TextFieldDefaults.colors(
                         unfocusedContainerColor = Color.Transparent,
@@ -142,9 +148,9 @@ fun AddItemScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 OutlinedTextField(
-                    value = inputText,
-                    onValueChange = { inputText = it },
-                    label = { Text("Main Text", color = Color.White) },
+                    value = captionText,
+                    onValueChange = { captionText = it },
+                    label = { Text("Caption", color = Color.White) },
                     modifier = Modifier.fillMaxWidth(),
                     colors = TextFieldDefaults.colors(
                         unfocusedContainerColor = Color.Transparent,
@@ -161,7 +167,7 @@ fun AddItemScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     TextButton(onClick = onComplete) {
-                        Text("Cancel", color = Color.White.copy(alpha = 0.7f))
+                        Text("Cancel", color = Color.White)
                     }
                     Button(
                         onClick = {
