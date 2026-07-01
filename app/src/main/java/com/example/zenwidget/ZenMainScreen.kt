@@ -60,7 +60,7 @@ fun ZenMainScreen() {
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
-            painter = painterResource(id = R.drawable.pexels_tree_bg), // Set your background here
+            painter = painterResource(id = R.drawable.pexels_sun_bg), // Set your background here
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier
@@ -79,7 +79,7 @@ fun ZenMainScreen() {
                 ) {
                     Text(
                         text = if (selectedRepo == RepoType.QUOTES) "Quotes" else "1-min Actions",
-                        color = Color.Blue.copy(alpha = 0.5f),
+                        color = Color.White,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -99,14 +99,16 @@ fun ZenMainScreen() {
                                 Text(
                                     "Quotes",
                                     color = if (selectedRepo == RepoType.QUOTES) Color.White else Color.White.copy(alpha = 0.5f),
-                                    style = MaterialTheme.typography.titleLarge
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
                             TextButton(onClick = { selectedRepo = RepoType.ACTIONS }) {
                                 Text(
                                     "1-min Actions",
                                     color = if (selectedRepo == RepoType.ACTIONS) Color.White else Color.White.copy(alpha = 0.5f),
-                                    style = MaterialTheme.typography.titleLarge
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
                         }
@@ -149,13 +151,15 @@ fun ZenMainScreen() {
                                     Text(
                                         text = item.text,
                                         color = Color.White,
-                                        style = MaterialTheme.typography.bodyLarge
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Bold
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
                                         text = item.caption,
-                                        color = Color.White.copy(alpha = 0.7f),
-                                        style = MaterialTheme.typography.labelMedium
+                                        color = Color.White.copy(alpha = 0.9f),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Normal
                                     )
                                 }
                             }
