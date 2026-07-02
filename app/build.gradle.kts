@@ -52,6 +52,7 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.work.runtime.ktx)
     implementation("io.github.kyant0:backdrop:2.0.0")
     ksp(libs.androidx.room.compiler)
     testImplementation(libs.junit)
