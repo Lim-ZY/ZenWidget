@@ -43,7 +43,14 @@ class Repository(private val dao: ZenDao) {
             } else {
                 RepoType.QUOTES
             }
-            itemIndex = 0
+
+            itemsCount = dao.getCount(activeRepo)
+            if (activeRepo == RepoType.ACTIONS && itemsCount > 0) {
+                itemIndex = (0 until itemsCount).random()
+            } else {
+                itemIndex = 0
+            }
+
             loadFromDb()
         }
     }
