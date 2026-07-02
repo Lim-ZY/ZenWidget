@@ -57,12 +57,11 @@ fun AddItemScreen(
 
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
 
     var targetRepo by remember { mutableStateOf(selectedRepo) }
     var inputText by remember { mutableStateOf("") }
     var captionText by remember { mutableStateOf("") }
-
-    val scrollState = rememberScrollState()
 
     Column(
         modifier = Modifier
@@ -74,10 +73,11 @@ fun AddItemScreen(
     ) {
         GlassCard(
             modifier = Modifier.fillMaxWidth(),
-            backdrop = backdrop) {
+            backdrop = backdrop
+        ) {
             Column {
                 Text(
-                    "Add to Widget",
+                    "Add to Zen",
                     color = Color.White,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
@@ -85,118 +85,137 @@ fun AddItemScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Text(
-                    text = "Target Repository",
-                    color = Color.White,
-                    style = MaterialTheme.typography.labelMedium
+                RepositorySelector(
+                    currentRepo = targetRepo,
+                    onRepoSelected = { targetRepo = it }
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.White.copy(alpha = 0.1f))
-                        .border(1.dp, Color.White.copy(alpha = 0.65f), RoundedCornerShape(12.dp)),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Option 1
-                    TextButton(
-                        onClick = { targetRepo = RepoType.QUOTES },
-                        modifier = Modifier
-                            .weight(1f)
-                            .background(if (targetRepo == RepoType.QUOTES) Color.White.copy(alpha = 0.4f) else Color.Transparent)
-                    ) {
-                        Text(
-                            text = "Quotes",
-                            color = Color.White
-                        )
-                    }
-
-                    // Divider Line
-                    Box(
-                        modifier = Modifier
-                            .width(1.dp)
-                            .height(40.dp)
-                            .background(Color.White.copy(alpha = 0.3f))
-                    )
-
-                    // Option 2
-                    TextButton(
-                        onClick = { targetRepo = RepoType.ACTIONS },
-                        modifier = Modifier
-                            .weight(1f)
-                            .background(if (targetRepo == RepoType.ACTIONS) Color.White.copy(alpha = 0.4f) else Color.Transparent)
-                    ) {
-                        Text(
-                            text = "1-min Actions",
-                            color = Color.White
-                        )
-                    }
-                }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                OutlinedTextField(
-                    value = inputText,
-                    onValueChange = { inputText = it },
-                    label = { Text("Main Text", color = Color.White) },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = TextFieldDefaults.colors(
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedTextColor = Color.White,
-                        focusedTextColor = Color.White
-                    )
+                ZenInputField(
+                    inputText = inputText,
+                    label = "Main Text",
+                    onValueChange = { inputText = it }
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                OutlinedTextField(
-                    value = captionText,
-                    onValueChange = { captionText = it },
-                    label = { Text("Caption", color = Color.White) },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = TextFieldDefaults.colors(
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedTextColor = Color.White,
-                        focusedTextColor = Color.White
-                    )
+                ZenInputField(
+                    inputText = captionText,
+                    label = "Caption",
+                    onValueChange = { captionText = it }
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    TextButton(onClick = onComplete) {
-                        Text("Cancel", color = Color.White)
-                    }
-                    Button(
-                        onClick = {
-                            if (inputText.isNotBlank()) {
-                                coroutineScope.launch {
-                                    // 1. Write safely to disk
-                                    dao.insertItem(
-                                        RepoItem(
-                                            repoType = targetRepo,
-                                            text = inputText,
-                                            caption = captionText
-                                        )
+                ActionButtons(
+                    onCancel = onComplete,
+                    onSave = {
+                        if (inputText.isNotBlank()) {
+                            coroutineScope.launch {
+                                dao.insertItem(
+                                    RepoItem(
+                                        repoType = targetRepo,
+                                        text = inputText,
+                                        caption = captionText
                                     )
-                                    // Update widget and close screen
-                                    ZenWidget().updateAll(context)
-                                    onComplete()
-                                }
+                                )
+                                ZenWidget().updateAll(context)
+                                onComplete()
                             }
                         }
-                    ) {
-                        Text("Save")
                     }
-                }
+                )
             }
+        }
+    }
+}
+
+@Composable
+fun RepositorySelector(
+    currentRepo: RepoType,
+    onRepoSelected: (RepoType) -> Unit
+) {
+    Text(
+        text = "Target Repository",
+        color = Color.White,
+        style = MaterialTheme.typography.labelMedium
+    )
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color.White.copy(alpha = 0.1f))
+            .border(1.dp, Color.White.copy(alpha = 0.65f), RoundedCornerShape(12.dp)),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Option 1
+        TextButton(
+            onClick = { onRepoSelected(RepoType.QUOTES) },
+            modifier = Modifier
+                .weight(1f)
+                .background(if (currentRepo == RepoType.QUOTES) Color.White.copy(alpha = 0.4f) else Color.Transparent)
+        ) {
+            Text(text = "Quotes", color = Color.White)
+        }
+
+        // Divider Line
+        Box(
+            modifier = Modifier
+                .width(1.dp)
+                .height(40.dp)
+                .background(Color.White.copy(alpha = 0.3f))
+        )
+
+        // Option 2
+        TextButton(
+            onClick = { onRepoSelected(RepoType.ACTIONS) },
+            modifier = Modifier
+                .weight(1f)
+                .background(if (currentRepo == RepoType.ACTIONS) Color.White.copy(alpha = 0.4f) else Color.Transparent)
+        ) {
+            Text(text = "1-min Actions", color = Color.White)
+        }
+    }
+}
+
+@Composable
+fun ZenInputField(
+    inputText: String,
+    label: String,
+    onValueChange: (String) -> Unit
+) {
+    OutlinedTextField(
+        value = inputText,
+        onValueChange = onValueChange,
+        label = { Text(label, color = Color.White) },
+        modifier = Modifier.fillMaxWidth(),
+        colors = TextFieldDefaults.colors(
+            unfocusedContainerColor = Color.Transparent,
+            focusedContainerColor = Color.Transparent,
+            unfocusedTextColor = Color.White,
+            focusedTextColor = Color.White
+        )
+    )
+}
+
+@Composable
+fun ActionButtons(
+    onCancel: () -> Unit,
+    onSave: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        TextButton(onClick = onCancel) {
+            Text("Cancel", color = Color.White)
+        }
+        Button(onClick = onSave) {
+            Text("Save")
         }
     }
 }

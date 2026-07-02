@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -43,7 +44,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.zenwidget.data.AppDatabase
 import com.example.zenwidget.data.RepoType
+import com.example.zenwidget.data.ZenDao
 import com.example.zenwidget.ui.theme.GlassCard
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.launch
@@ -59,10 +62,10 @@ fun ZenMainScreen() {
     val selectedRepo = if (pagerState.currentPage == 0) RepoType.QUOTES else RepoType.ACTIONS
     var isAddingItem by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-
     val backdrop = rememberLayerBackdrop() // For liquid glass API
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // Background Image
         Image(
             painter = painterResource(id = R.drawable.pexels_sun_bg),
             contentDescription = null,
@@ -75,67 +78,15 @@ fun ZenMainScreen() {
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                if (!isAddingItem) {
-                    GlassCard(
-                        modifier = Modifier
-                            .windowInsetsPadding(WindowInsets.statusBars)
-                            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
-                        backdrop = backdrop
-                    ) {
-                        Text(
-                            text = if (selectedRepo == RepoType.QUOTES) "Quotes" else "1-min Actions",
-                            color = Color.White,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
+                ZenTopBar(isAddingItem, selectedRepo, backdrop)
             },
             bottomBar = {
-                if (!isAddingItem) {
-                    GlassCard(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        backdrop = backdrop
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            TextButton(onClick = {
-                                scope.launch { pagerState.animateScrollToPage(0) }
-                            }) {
-                                Text(
-                                    "Quotes",
-                                    color = if (selectedRepo == RepoType.QUOTES) Color.White else Color.White.copy(alpha = 0.5f),
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            TextButton(onClick = {
-                                scope.launch { pagerState.animateScrollToPage(1) }
-                            }) {
-                                Text(
-                                    "1-min Actions",
-                                    color = if (selectedRepo == RepoType.ACTIONS) Color.White else Color.White.copy(alpha = 0.5f),
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
+                ZenBottomBar(isAddingItem, selectedRepo, backdrop) { targetPage ->
+                    scope.launch { pagerState.animateScrollToPage(targetPage) }
                 }
             },
             floatingActionButton = {
-                if (!isAddingItem) {
-                    FloatingActionButton(
-                        onClick = { isAddingItem = true },
-                        containerColor = Color.White.copy(alpha = 0.2f),
-                        contentColor = Color.White,
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Add")
-                    }
-                }
+                ZenFab(isAddingItem) { isAddingItem = true }
             }
         ) { paddingValues ->
             Box(modifier = Modifier.padding(paddingValues)) {
@@ -147,47 +98,130 @@ fun ZenMainScreen() {
                         onComplete = { isAddingItem = false }
                     )
                 } else {
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.fillMaxSize()
-                    ) { page ->
-                        val currentRepo = if (page == 0) RepoType.QUOTES else RepoType.ACTIONS
-                        val currentItems by dao.getItemsForRepo(currentRepo).collectAsState(initial = emptyList())
-
-                        LazyColumn(
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            items(currentItems) { item ->
-                                GlassCard(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    backdrop = backdrop
-                                ) {
-                                    Column {
-                                        Text(
-                                            text = item.text,
-                                            color = Color.White,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = item.caption,
-                                            color = Color.White.copy(alpha = 0.9f),
-                                            style = MaterialTheme.typography.labelMedium,
-                                            fontWeight = FontWeight.Normal
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                    }
+                    ZenPagerContent(pagerState,dao, backdrop)
                 }
             }
         }
     }
 }
 
+@Composable
+fun ZenTopBar(
+    isAddingItem: Boolean,
+    selectedRepo: RepoType,
+    backdrop: LayerBackdrop
+) {
+    if (!isAddingItem) {
+        GlassCard(
+            modifier = Modifier
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
+            backdrop = backdrop
+        ) {
+            Text(
+                text = if (selectedRepo == RepoType.QUOTES) "Quotes" else "1-min Actions",
+                color = Color.White,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
 
+@Composable
+fun ZenBottomBar(
+    isAddingItem: Boolean,
+    selectedRepo: RepoType,
+    backdrop: LayerBackdrop,
+    onNavigate: (Int) -> Unit
+) {
+    if (!isAddingItem) {
+        GlassCard(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            backdrop = backdrop
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                TextButton(onClick = { onNavigate(0) }) {
+                    Text(
+                        "Quotes",
+                        color = if (selectedRepo == RepoType.QUOTES) Color.White else Color.White.copy(alpha = 0.5f),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                TextButton(onClick = { onNavigate(1) }) {
+                    Text(
+                        "1-min Actions",
+                        color = if (selectedRepo == RepoType.ACTIONS) Color.White else Color.White.copy(alpha = 0.5f),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ZenFab(
+    isAddingItem: Boolean,
+    onClick: () -> Unit
+) {
+    if (!isAddingItem) {
+        FloatingActionButton(
+            onClick = onClick,
+            containerColor = Color.White.copy(alpha = 0.2f),
+            contentColor = Color.White,
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Add")
+        }
+    }
+}
+
+@Composable
+fun ZenPagerContent(
+    pagerState: PagerState,
+    dao: ZenDao,
+    backdrop: LayerBackdrop
+) {
+    HorizontalPager(
+        state = pagerState,
+        modifier = Modifier.fillMaxSize()
+    ) { page ->
+        val currentRepo = if (page == 0) RepoType.QUOTES else RepoType.ACTIONS
+        val currentItems by dao.getItemsForRepo(currentRepo).collectAsState(initial = emptyList())
+
+        LazyColumn(
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(currentItems) { item ->
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    backdrop = backdrop
+                ) {
+                    Column {
+                        Text(
+                            text = item.text,
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = item.caption,
+                            color = Color.White.copy(alpha = 0.9f),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Normal
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
