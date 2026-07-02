@@ -75,18 +75,20 @@ fun ZenMainScreen() {
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                GlassCard(
-                    modifier = Modifier
-                        .windowInsetsPadding(WindowInsets.statusBars)
-                        .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
-                    backdrop = backdrop
-                ) {
-                    Text(
-                        text = if (selectedRepo == RepoType.QUOTES) "Quotes" else "1-min Actions",
-                        color = Color.White,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
+                if (!isAddingItem) {
+                    GlassCard(
+                        modifier = Modifier
+                            .windowInsetsPadding(WindowInsets.statusBars)
+                            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
+                        backdrop = backdrop
+                    ) {
+                        Text(
+                            text = if (selectedRepo == RepoType.QUOTES) "Quotes" else "1-min Actions",
+                            color = Color.White,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             },
             bottomBar = {
