@@ -58,8 +58,7 @@ fun ZenMainScreen() {
     val dao = database.zenDao()
 
     // 0 for Quotes, 1 for Actions
-    val pagerState = rememberPagerState(pageCount = { 2 })
-    val selectedRepo = if (pagerState.currentPage == 0) RepoType.QUOTES else RepoType.ACTIONS
+    val pagerState = rememberPagerState(pageCount = { 3 })
     var isAddingItem by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val backdrop = rememberLayerBackdrop() // For liquid glass API
@@ -78,22 +77,22 @@ fun ZenMainScreen() {
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                ZenTopBar(isAddingItem, selectedRepo, backdrop)
+                ZenTopBar(isAddingItem, pagerState.currentPage, backdrop)
             },
             bottomBar = {
-                ZenBottomBar(isAddingItem, selectedRepo, backdrop) { targetPage ->
+                ZenBottomBar(isAddingItem, pagerState.currentPage, backdrop) { targetPage ->
                     scope.launch { pagerState.animateScrollToPage(targetPage) }
                 }
             },
             floatingActionButton = {
-                ZenFab(isAddingItem) { isAddingItem = true }
+                ZenFab(isAddingItem, pagerState.currentPage) { isAddingItem = true }
             }
         ) { paddingValues ->
             Box(modifier = Modifier.padding(paddingValues)) {
                 if (isAddingItem) {
                     AddItemScreen(
                         backdrop = backdrop,
-                        selectedRepo = selectedRepo,
+                        selectedRepo = if (pagerState.currentPage == 0) RepoType.QUOTES else RepoType.ACTIONS,
                         dao = dao,
                         onComplete = { isAddingItem = false }
                     )
@@ -108,7 +107,7 @@ fun ZenMainScreen() {
 @Composable
 fun ZenTopBar(
     isAddingItem: Boolean,
-    selectedRepo: RepoType,
+    currentPage: Int,
     backdrop: LayerBackdrop
 ) {
     if (!isAddingItem) {
@@ -118,8 +117,14 @@ fun ZenTopBar(
                 .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
             backdrop = backdrop
         ) {
+            val titleText = when (currentPage) {
+                0 -> "Quotes"
+                1 -> "1-min Actions"
+                else -> "Focus"
+            }
+
             Text(
-                text = if (selectedRepo == RepoType.QUOTES) "Quotes" else "1-min Actions",
+                text = titleText,
                 color = Color.White,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
@@ -131,7 +136,7 @@ fun ZenTopBar(
 @Composable
 fun ZenBottomBar(
     isAddingItem: Boolean,
-    selectedRepo: RepoType,
+    currentPage: Int,
     backdrop: LayerBackdrop,
     onNavigate: (Int) -> Unit
 ) {
@@ -142,12 +147,12 @@ fun ZenBottomBar(
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 TextButton(onClick = { onNavigate(0) }) {
                     Text(
                         "Quotes",
-                        color = if (selectedRepo == RepoType.QUOTES) Color.White else Color.White.copy(alpha = 0.5f),
+                        color = if (currentPage == 0) Color.White else Color.White.copy(alpha = 0.5f),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -155,7 +160,15 @@ fun ZenBottomBar(
                 TextButton(onClick = { onNavigate(1) }) {
                     Text(
                         "1-min Actions",
-                        color = if (selectedRepo == RepoType.ACTIONS) Color.White else Color.White.copy(alpha = 0.5f),
+                        color = if (currentPage == 1) Color.White else Color.White.copy(alpha = 0.5f),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                TextButton(onClick = { onNavigate(2) }) {
+                    Text(
+                        "Focus",
+                        color = if (currentPage == 2) Color.White else Color.White.copy(alpha = 0.5f),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -168,9 +181,10 @@ fun ZenBottomBar(
 @Composable
 fun ZenFab(
     isAddingItem: Boolean,
+    currentPage: Int,
     onClick: () -> Unit
 ) {
-    if (!isAddingItem) {
+    if (!isAddingItem && currentPage != 2) {
         FloatingActionButton(
             onClick = onClick,
             containerColor = Color.White.copy(alpha = 0.2f),
@@ -192,35 +206,42 @@ fun ZenPagerContent(
         state = pagerState,
         modifier = Modifier.fillMaxSize()
     ) { page ->
-        val currentRepo = if (page == 0) RepoType.QUOTES else RepoType.ACTIONS
-        val currentItems by dao.getItemsForRepo(currentRepo).collectAsState(initial = emptyList())
+        when (page) {
+            0, 1 -> {
+                val currentRepo = if (page == 0) RepoType.QUOTES else RepoType.ACTIONS
+                val currentItems by dao.getItemsForRepo(currentRepo).collectAsState(initial = emptyList())
 
-        LazyColumn(
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            items(currentItems) { item ->
-                GlassCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    backdrop = backdrop
+                LazyColumn(
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    Column {
-                        Text(
-                            text = item.text,
-                            color = Color.White,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = item.caption,
-                            color = Color.White.copy(alpha = 0.9f),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Normal
-                        )
+                    items(currentItems) { item ->
+                        GlassCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            backdrop = backdrop
+                        ) {
+                            Column {
+                                Text(
+                                    text = item.text,
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = item.caption,
+                                    color = Color.White.copy(alpha = 0.9f),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Normal
+                                )
+                            }
+                        }
                     }
                 }
+            }
+            2 -> {
+                PomodoroScreen(backdrop)
             }
         }
     }
