@@ -42,6 +42,7 @@ fun PomodoroScreen(
     backdrop: LayerBackdrop
 ) {
     // Timer State
+    var isBreak by remember { mutableStateOf(false) }
     var timeLeft by remember { mutableIntStateOf(25 * 60) } // 25 minutes in seconds
     var isRunning by remember { mutableStateOf(false) }
     var lap by remember { mutableIntStateOf(1) }
@@ -57,6 +58,10 @@ fun PomodoroScreen(
             timeLeft--
             if (timeLeft == 0) {
                 isRunning = false
+                isBreak = !isBreak
+                timeLeft = if (isBreak) 5 * 60 else 25 * 60
+
+                if (!isBreak) lap++
                 // Optional: Trigger a notification or sound here in the future
             }
         }
@@ -83,7 +88,7 @@ fun PomodoroScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                PomodoroHeader(lap = lap)
+                PomodoroHeader(lap = lap, isBreak = isBreak)
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -99,12 +104,14 @@ fun PomodoroScreen(
                     onToggleTimer = { isRunning = !isRunning },
                     onSkip = {
                         isRunning = false
-                        timeLeft = 25 * 60
-                        lap++
+                        isBreak = !isBreak
+                        timeLeft = if (isBreak) 5 * 60 else 25 * 60
+                        if (!isBreak) lap++
                     },
                     onSettingsExpandedChange = { isSettingsExpanded = it },
                     onResetSessions = {
                         lap = 1
+                        isBreak = false
                         timeLeft = 25 * 60
                         isRunning = false
                         isSettingsExpanded = false
@@ -116,9 +123,9 @@ fun PomodoroScreen(
 }
 
 @Composable
-fun PomodoroHeader(lap: Int) {
+fun PomodoroHeader(lap: Int, isBreak: Boolean) {
     Text(
-        text = "Lap $lap",
+        text = if (!isBreak) "Lap $lap" else "Short Break",
         color = Color.White.copy(alpha = 0.7f),
         style = MaterialTheme.typography.titleLarge,
         fontWeight = FontWeight.Bold
