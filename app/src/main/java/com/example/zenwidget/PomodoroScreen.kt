@@ -61,13 +61,19 @@ fun PomodoroScreen(
             if (timeLeftMs <= 0L) {
                 isRunning = false
                 isBreak = !isBreak
-                timeLeftMs = if (isBreak) {
-                    TimeUnit.MINUTES.toMillis(5)
+                timeLeftMs = if (isBreak && lap == 4) {
+                    TimeUnit.MINUTES.toMillis(15) // Long Break
+                } else if (isBreak) {
+                    TimeUnit.MINUTES.toMillis(5) // Short Break
                 } else {
-                    TimeUnit.MINUTES.toMillis(25)
+                    TimeUnit.MINUTES.toMillis(25) // Lap
                 }
 
-                if (!isBreak) lap++
+                if (!isBreak && lap == 4) {
+                    lap = 1
+                } else if (!isBreak) {
+                    lap++
+                }
                 // Optional: Trigger a notification or sound here in the future
             }
             delay(1000L)
@@ -112,12 +118,19 @@ fun PomodoroScreen(
                     onSkip = {
                         isRunning = false
                         isBreak = !isBreak
-                        timeLeftMs = if (isBreak) {
-                            TimeUnit.MINUTES.toMillis(5)
+                        timeLeftMs = if (isBreak && lap == 4) {
+                            TimeUnit.MINUTES.toMillis(15) // Long Break
+                        } else if (isBreak) {
+                            TimeUnit.MINUTES.toMillis(5) // Short Break
                         } else {
-                            TimeUnit.MINUTES.toMillis(25)
+                            TimeUnit.MINUTES.toMillis(25) // Lap
                         }
-                        if (!isBreak) lap++
+
+                        if (!isBreak && lap == 4) {
+                            lap = 1
+                        } else if (!isBreak) {
+                            lap++
+                        }
                     },
                     onSettingsExpandedChange = { isSettingsExpanded = it },
                     onResetSessions = {
