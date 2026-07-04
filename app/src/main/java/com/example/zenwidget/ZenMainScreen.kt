@@ -21,9 +21,8 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -207,9 +206,16 @@ fun ZenFab(
             onClick = onClick,
             containerColor = Color.White.copy(alpha = 0.2f),
             contentColor = Color.White,
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
+            elevation = FloatingActionButtonDefaults.elevation(
+                defaultElevation = 0.dp,
+                pressedElevation = 0.dp
+            )
         ) {
-            Icon(Icons.Default.Add, contentDescription = "Add")
+            Icon(
+                painter = painterResource(id = R.drawable.ic_symbol_add),
+                contentDescription = "Add",
+                modifier = Modifier.size(24.dp))
         }
     }
 }
