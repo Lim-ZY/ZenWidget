@@ -201,14 +201,17 @@ fun PomodoroControls(
         // 2. Skip Button
         FilledIconButton(
             onClick = onSkip,
+            enabled = !isRunning,
             modifier = Modifier.size(56.dp),
             shape = CircleShape,
-            colors = IconButtonDefaults.filledIconButtonColors(containerColor = darkGray)
+            colors = IconButtonDefaults.filledIconButtonColors(
+                containerColor = darkGray,
+                disabledContentColor = darkGray.copy(0.8f))
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_symbol_skip),
                 contentDescription = "Skip",
-                tint = Color.White
+                tint = if (isRunning) Color.White.copy(0.8f) else Color.White
             )
         }
 
@@ -234,7 +237,8 @@ fun PomodoroControls(
                 modifier = Modifier.background(Color(0xFF2C2C2C))
             ) {
                 DropdownMenuItem(
-                    text = { Text("Reset Sessions", color = Color.White) },
+                    text = { Text("Reset Sessions", color = if (!isRunning) Color.White else Color.White.copy(0.8f)) },
+                    enabled = !isRunning,
                     onClick = onResetSessions
                 )
                 DropdownMenuItem(
