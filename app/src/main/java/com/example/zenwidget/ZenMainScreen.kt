@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,10 +25,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -35,6 +36,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -149,32 +151,48 @@ fun ZenBottomBar(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                TextButton(onClick = { onNavigate(0) }) {
-                    Text(
-                        "Quotes",
-                        color = if (currentPage == 0) Color.White else Color.White.copy(alpha = 0.5f),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                IconButton(onClick = { onNavigate(0) }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_symbol_chat_bubble),
+                        contentDescription = "Quotes",
+                        modifier = Modifier.size(28.dp),
+                        tint = if (currentPage == 0) Color.White else Color.White.copy(alpha = 0.5f),
                     )
                 }
-                TextButton(onClick = { onNavigate(1) }) {
-                    Text(
-                        "1-min Actions",
-                        color = if (currentPage == 1) Color.White else Color.White.copy(alpha = 0.5f),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
+                IconButton(onClick = { onNavigate(1) }) {
+                    OneMinActionLogo(currentPage)
                 }
-                TextButton(onClick = { onNavigate(2) }) {
-                    Text(
-                        "Focus",
-                        color = if (currentPage == 2) Color.White else Color.White.copy(alpha = 0.5f),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                IconButton(onClick = { onNavigate(2) }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_symbol_hourglass),
+                        contentDescription = "Pomodoro Timer",
+                        modifier = Modifier.size(28.dp),
+                        tint = if (currentPage == 2) Color.White else Color.White.copy(alpha = 0.5f),
                     )
                 }
             }
         }
+    }
+}
+
+@Composable
+fun OneMinActionLogo(currentPage: Int) {
+    Box(modifier = Modifier.size(28.dp)) {
+        Icon(
+            painter = painterResource(id = R.drawable.ic_sentiment_calm),
+            contentDescription = "1-min Actions",
+            modifier = Modifier.fillMaxSize(),
+            tint = if (currentPage == 1) Color.White else Color.White.copy(alpha = 0.5f)
+        )
+
+        Icon(
+            painter = painterResource(id = R.drawable.ic_symbol_one),
+            contentDescription = null,
+            modifier = Modifier
+                .size(7.dp)
+                .align(Alignment.TopEnd),
+            tint = if (currentPage == 1) Color.White else Color.White.copy(alpha = 0.5f)
+        )
     }
 }
 
