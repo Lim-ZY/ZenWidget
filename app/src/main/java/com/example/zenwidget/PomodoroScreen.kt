@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -36,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import com.example.zenwidget.ui.theme.GlassCard
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import kotlinx.coroutines.delay
+import java.util.concurrent.TimeUnit
 
 @Composable
 fun PomodoroScreen(
@@ -43,7 +45,8 @@ fun PomodoroScreen(
 ) {
     // Timer State
     var isBreak by remember { mutableStateOf(false) }
-    var timeLeft by remember { mutableIntStateOf(25 * 60) } // 25 minutes in seconds
+    // 25 minutes in milliseconds
+    var timeLeftMs by remember { mutableLongStateOf(TimeUnit.MINUTES.toMillis(25)) }
     var isRunning by remember { mutableStateOf(false) }
     var lap by remember { mutableIntStateOf(1) }
     var isSettingsExpanded by remember { mutableStateOf(false) }
@@ -53,23 +56,27 @@ fun PomodoroScreen(
 
     // Timer Logic: Ticks every second when isRunning is true
     LaunchedEffect(isRunning) {
-        while (isRunning && timeLeft > 0) {
-            delay(1000L)
-            timeLeft--
-            if (timeLeft == 0) {
+        while (isRunning && timeLeftMs > 0) {
+            timeLeftMs -= 1000L
+            if (timeLeftMs <= 0L) {
                 isRunning = false
                 isBreak = !isBreak
-                timeLeft = if (isBreak) 5 * 60 else 25 * 60
+                timeLeftMs = if (isBreak) {
+                    TimeUnit.MINUTES.toMillis(5)
+                } else {
+                    TimeUnit.MINUTES.toMillis(25)
+                }
 
                 if (!isBreak) lap++
                 // Optional: Trigger a notification or sound here in the future
             }
+            delay(1000L)
         }
     }
 
     // Format time to MM:SS
-    val minutes = timeLeft / 60
-    val seconds = timeLeft % 60
+    val minutes = TimeUnit.MILLISECONDS.toMinutes(timeLeftMs)
+    val seconds = TimeUnit.MILLISECONDS.toSeconds(timeLeftMs) - TimeUnit.MINUTES.toSeconds(minutes)
     val timeString = String.format("%02d:%02d", minutes, seconds)
 
     Column(
@@ -105,14 +112,18 @@ fun PomodoroScreen(
                     onSkip = {
                         isRunning = false
                         isBreak = !isBreak
-                        timeLeft = if (isBreak) 5 * 60 else 25 * 60
+                        timeLeftMs = if (isBreak) {
+                            TimeUnit.MINUTES.toMillis(5)
+                        } else {
+                            TimeUnit.MINUTES.toMillis(25)
+                        }
                         if (!isBreak) lap++
                     },
                     onSettingsExpandedChange = { isSettingsExpanded = it },
                     onResetSessions = {
                         lap = 1
                         isBreak = false
-                        timeLeft = 25 * 60
+                        timeLeftMs = TimeUnit.MINUTES.toMillis(25)
                         isRunning = false
                         isSettingsExpanded = false
                     }
