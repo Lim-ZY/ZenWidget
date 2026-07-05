@@ -52,42 +52,41 @@ fun PomodoroScreen(
 
     // Timer State
     var isBreak by remember { mutableStateOf(false) }
-    // 25 minutes in milliseconds
     var timeLeftMs by remember { mutableLongStateOf(TimeUnit.MINUTES.toMillis(25)) }
     var isRunning by remember { mutableStateOf(false) }
     var lap by remember { mutableIntStateOf(1) }
     var isSettingsExpanded by remember { mutableStateOf(false) }
 
-    // Colors matching your screenshot
     val primaryBlue = Color(0xFF64B5F6)
+
+    fun advanceToNextPhase() {
+        isRunning = false
+        isBreak = !isBreak
+
+        timeLeftMs = if (isBreak) {
+            if (lap == 4) TimeUnit.MINUTES.toMillis(15) else TimeUnit.MINUTES.toMillis(5)
+        } else {
+            TimeUnit.MINUTES.toMillis(25)
+        }
+
+        if (!isBreak) {
+            lap = if (lap == 4) 1 else lap + 1
+        }
+
+        if (DndManager.hasPermission(context)) {
+            DndManager.setDoNotDisturb(context, enable = false)
+        }
+    }
 
     // Timer Logic: Ticks every second when isRunning is true
     LaunchedEffect(isRunning) {
         while (isRunning && timeLeftMs > 0) {
             timeLeftMs -= 1000L
+            delay(1000L)
             if (timeLeftMs <= 0L) {
-                isRunning = false
-                isBreak = !isBreak
-                timeLeftMs = if (isBreak && lap == 4) {
-                    TimeUnit.MINUTES.toMillis(15) // Long Break
-                } else if (isBreak) {
-                    TimeUnit.MINUTES.toMillis(5) // Short Break
-                } else {
-                    TimeUnit.MINUTES.toMillis(25) // Lap
-                }
-
-                if (!isBreak && lap == 4) {
-                    lap = 1
-                } else if (!isBreak) {
-                    lap++
-                }
-
-                if (DndManager.hasPermission(context)) {
-                    DndManager.setDoNotDisturb(context, enable = false)
-                }
+                advanceToNextPhase()
                 // Optional: Trigger a notification or sound here in the future
             }
-            delay(1000L)
         }
     }
 
@@ -144,27 +143,7 @@ fun PomodoroScreen(
                             }
                         }
                     },
-                    onSkip = {
-                        isRunning = false
-                        isBreak = !isBreak
-                        timeLeftMs = if (isBreak && lap == 4) {
-                            TimeUnit.MINUTES.toMillis(15) // Long Break
-                        } else if (isBreak) {
-                            TimeUnit.MINUTES.toMillis(5) // Short Break
-                        } else {
-                            TimeUnit.MINUTES.toMillis(25) // Lap
-                        }
-
-                        if (!isBreak && lap == 4) {
-                            lap = 1
-                        } else if (!isBreak) {
-                            lap++
-                        }
-
-                        if (DndManager.hasPermission(context)) {
-                            DndManager.setDoNotDisturb(context, enable = false)
-                        }
-                    },
+                    onSkip = { advanceToNextPhase() },
                     onSettingsExpandedChange = { isSettingsExpanded = it },
                     onResetSessions = {
                         lap = 1
@@ -220,8 +199,13 @@ fun PomodoroScreen(
 
 @Composable
 fun PomodoroHeader(lap: Int, isBreak: Boolean) {
+    val headerText = when {
+        !isBreak -> "Lap $lap"
+        lap == 4 -> "Long Break"
+        else -> "Short Break"
+    }
     Text(
-        text = if (!isBreak) "Lap $lap" else "Short Break",
+        text = headerText,
         color = Color.White.copy(alpha = 0.7f),
         style = MaterialTheme.typography.titleLarge,
         fontWeight = FontWeight.Bold
@@ -258,7 +242,7 @@ fun PomodoroControls(
         // 1. Play/Pause Button
         FilledIconButton(
             onClick = onToggleTimer,
-            modifier = Modifier.size(72.dp), // Slightly larger main button
+            modifier = Modifier.size(72.dp),
             shape = CircleShape,
             colors = IconButtonDefaults.filledIconButtonColors(containerColor = primaryColor)
         ) {
