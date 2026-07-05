@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledIconButton
@@ -19,6 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -43,6 +46,10 @@ import java.util.concurrent.TimeUnit
 fun PomodoroScreen(
     backdrop: LayerBackdrop
 ) {
+    val context = LocalContext.current
+
+    var showPermissionDialog by remember { mutableStateOf(false) }
+
     // Timer State
     var isBreak by remember { mutableStateOf(false) }
     // 25 minutes in milliseconds
@@ -73,6 +80,10 @@ fun PomodoroScreen(
                     lap = 1
                 } else if (!isBreak) {
                     lap++
+                }
+
+                if (DndManager.hasPermission(context)) {
+                    DndManager.setDoNotDisturb(context, enable = false)
                 }
                 // Optional: Trigger a notification or sound here in the future
             }
@@ -114,7 +125,25 @@ fun PomodoroScreen(
                     isRunning = isRunning,
                     primaryColor = primaryBlue,
                     isSettingsExpanded = isSettingsExpanded,
-                    onToggleTimer = { isRunning = !isRunning },
+                    onToggleTimer = {
+                        if (!isRunning) { // Start timer
+                            if (!isBreak) { // Focus session
+                                if (DndManager.hasPermission(context)) {
+                                    DndManager.setDoNotDisturb(context, enable = true)
+                                    isRunning = true
+                                } else {
+                                    showPermissionDialog = true
+                                }
+                            } else { // Break session
+                                isRunning = true
+                            }
+                        } else { // Pause timer
+                            isRunning = false
+                            if (DndManager.hasPermission(context)) {
+                                DndManager.setDoNotDisturb(context, enable = false)
+                            }
+                        }
+                    },
                     onSkip = {
                         isRunning = false
                         isBreak = !isBreak
@@ -131,6 +160,10 @@ fun PomodoroScreen(
                         } else if (!isBreak) {
                             lap++
                         }
+
+                        if (DndManager.hasPermission(context)) {
+                            DndManager.setDoNotDisturb(context, enable = false)
+                        }
                     },
                     onSettingsExpandedChange = { isSettingsExpanded = it },
                     onResetSessions = {
@@ -139,9 +172,48 @@ fun PomodoroScreen(
                         timeLeftMs = TimeUnit.MINUTES.toMillis(25)
                         isRunning = false
                         isSettingsExpanded = false
+
+                        if (DndManager.hasPermission(context)) {
+                            DndManager.setDoNotDisturb(context, enable = false)
+                        }
                     }
                 )
             }
+        }
+
+        if (showPermissionDialog) {
+            AlertDialog(
+                onDismissRequest = { showPermissionDialog = false },
+                containerColor = Color(0xFF2C2C2C),
+                title = {
+                    Text(
+                        text = "Enable Do Not Disturb access",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Text(
+                        text = "To keep you in the zone, ZenWidget needs permission to silence notifications during your Pomodoro sessions. Please enable Do Not Disturb access for ZenWidget.",
+                        color = Color.White.copy(alpha = 0.8f)
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showPermissionDialog = false
+                            DndManager.openSettings(context)
+                        }
+                    ) {
+                        Text("Go to Settings", color = Color(0xFF64B5F6))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showPermissionDialog = false }) {
+                        Text("Not Now", color = Color.White.copy(alpha = 0.5f))
+                    }
+                }
+            )
         }
     }
 }
