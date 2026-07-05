@@ -1,5 +1,10 @@
 package com.example.zenwidget
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,10 +27,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -37,9 +40,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.example.zenwidget.ui.theme.GlassCard
+import com.example.zenwidget.utils.PomodoroService
 import com.kyant.backdrop.backdrops.LayerBackdrop
-import kotlinx.coroutines.delay
 import java.util.concurrent.TimeUnit
 
 @Composable
@@ -48,46 +52,31 @@ fun PomodoroScreen(
 ) {
     val context = LocalContext.current
 
-    var showPermissionDialog by remember { mutableStateOf(false) }
-
-    // Timer State
-    var isBreak by remember { mutableStateOf(false) }
-    var timeLeftMs by remember { mutableLongStateOf(TimeUnit.MINUTES.toMillis(25)) }
-    var isRunning by remember { mutableStateOf(false) }
-    var lap by remember { mutableIntStateOf(1) }
-    var isSettingsExpanded by remember { mutableStateOf(false) }
-
-    val primaryBlue = Color(0xFF64B5F6)
-
-    fun advanceToNextPhase() {
-        isRunning = false
-        isBreak = !isBreak
-
-        timeLeftMs = if (isBreak) {
-            if (lap == 4) TimeUnit.MINUTES.toMillis(15) else TimeUnit.MINUTES.toMillis(5)
-        } else {
-            TimeUnit.MINUTES.toMillis(25)
-        }
-
-        if (!isBreak) {
-            lap = if (lap == 4) 1 else lap + 1
-        }
-
-        if (DndManager.hasPermission(context)) {
-            DndManager.setDoNotDisturb(context, enable = false)
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            val intent = Intent(context, PomodoroService::class.java).apply { action = "START" }
+            context.startService(intent)
         }
     }
 
-    // Timer Logic: Ticks every second when isRunning is true
-    LaunchedEffect(isRunning) {
-        while (isRunning && timeLeftMs > 0) {
-            timeLeftMs -= 1000L
-            delay(1000L)
-            if (timeLeftMs <= 0L) {
-                advanceToNextPhase()
-                // Optional: Trigger a notification or sound here in the future
-            }
+    var showPermissionDialog by remember { mutableStateOf(false) }
+    var isSettingsExpanded by remember { mutableStateOf(false) }
+
+    // Timer State
+    val isBreak by PomodoroService.isBreak.collectAsState()
+    val timeLeftMs by PomodoroService.timeLeftMs.collectAsState()
+    val isRunning by PomodoroService.isRunning.collectAsState()
+    val lap by PomodoroService.lap.collectAsState()
+
+    val primaryBlue = Color(0xFF64B5F6)
+
+    fun sendServiceAction(action: String) {
+        val intent = Intent(context, PomodoroService::class.java).apply {
+            this.action = action
         }
+        context.startService(intent)
     }
 
     // Format time to MM:SS
@@ -125,37 +114,25 @@ fun PomodoroScreen(
                     primaryColor = primaryBlue,
                     isSettingsExpanded = isSettingsExpanded,
                     onToggleTimer = {
-                        if (!isRunning) { // Start timer
-                            if (!isBreak) { // Focus session
-                                if (DndManager.hasPermission(context)) {
-                                    DndManager.setDoNotDisturb(context, enable = true)
-                                    isRunning = true
-                                } else {
-                                    showPermissionDialog = true
-                                }
+                        if (!isRunning) {
+                            if (!isBreak && !DndManager.hasPermission(context)) {
+                                showPermissionDialog = true
                             } else { // Break session
-                                isRunning = true
+                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU &&
+                                    ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+                                    != PackageManager.PERMISSION_GRANTED) {
+                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                } else {
+                                    sendServiceAction("START")
+                                }
                             }
                         } else { // Pause timer
-                            isRunning = false
-                            if (DndManager.hasPermission(context)) {
-                                DndManager.setDoNotDisturb(context, enable = false)
-                            }
+                            sendServiceAction("PAUSE")
                         }
                     },
-                    onSkip = { advanceToNextPhase() },
+                    onSkip = { sendServiceAction("SKIP") },
                     onSettingsExpandedChange = { isSettingsExpanded = it },
-                    onResetSessions = {
-                        lap = 1
-                        isBreak = false
-                        timeLeftMs = TimeUnit.MINUTES.toMillis(25)
-                        isRunning = false
-                        isSettingsExpanded = false
-
-                        if (DndManager.hasPermission(context)) {
-                            DndManager.setDoNotDisturb(context, enable = false)
-                        }
-                    }
+                    onResetSessions = { sendServiceAction("RESET") }
                 )
             }
         }
