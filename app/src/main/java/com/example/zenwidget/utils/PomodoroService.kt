@@ -5,13 +5,20 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.app.Service.START_NOT_STICKY
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat.startForeground
+import androidx.core.app.ServiceCompat.stopForeground
 import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.getSystemService
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.example.zenwidget.DndManager
 import com.example.zenwidget.R
 import kotlinx.coroutines.CoroutineScope
@@ -23,11 +30,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.security.acl.Owner
 import java.util.concurrent.TimeUnit
 
-class PomodoroService : Service() {
+class PomodoroService : Service(), DefaultLifecycleObserver {
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var timerJob: Job? = null
+    private var isAppInForeground = false
 
     companion object {
         private val _timeLeftMs = MutableStateFlow(TimeUnit.MINUTES.toMillis(25))
@@ -47,8 +56,26 @@ class PomodoroService : Service() {
     }
 
     override fun onCreate() {
-        super.onCreate()
+        super<Service>.onCreate()
         createNotificationChannel()
+
+        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+    }
+
+    override fun onStart(owner: LifecycleOwner) {
+        super<DefaultLifecycleObserver>.onStart(owner)
+        isAppInForeground = true
+        clearActiveNotification()
+    }
+
+    override fun onStop(owner: LifecycleOwner) {
+        super.onStop(owner)
+        isAppInForeground = false
+
+        if (_isRunning.value) {
+            val statusPrefix = if (!_isBreak.value) "Lap ${_lap.value} remaining: " else "Break time remaining: "
+            updateNotification("$statusPrefix${formatTime(_timeLeftMs.value)}")
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -71,15 +98,20 @@ class PomodoroService : Service() {
 
         startForeground(
             NOTIFICATION_ID,
-            buildNotification("Timer running..."),
+            buildNotification(if (_isBreak.value) "Break Time! Relax~" else "Lap ${_lap.value} in progress. Try your best!"),
             ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
         )
+
+        val statusPrefix = if (isBreak.value) "Break time remaining: " else "Lap ${_lap.value} remaining: "
 
         timerJob = serviceScope.launch {
             while (_timeLeftMs.value > 0) {
                 delay(1000L)
                 _timeLeftMs.value -= 1000L
-                updateNotification("${formatTime(_timeLeftMs.value)} remaining")
+
+                if (!isAppInForeground) {
+                    updateNotification("$statusPrefix${formatTime(_timeLeftMs.value)}")
+                }
 
                 if (_timeLeftMs.value <= 0L) {
                     advanceToNextPhase()
@@ -88,13 +120,18 @@ class PomodoroService : Service() {
         }
     }
 
+    private fun clearActiveNotification() {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(NOTIFICATION_ID, buildNotification("Active session running in app"))
+    }
+
     private fun pauseTimer() {
         _isRunning.value = false
         timerJob?.cancel()
         if (DndManager.hasPermission(this)) {
             DndManager.setDoNotDisturb(this, enable = false)
         }
-        stopForeground(STOP_FOREGROUND_DETACH)
+        stopForeground(STOP_FOREGROUND_REMOVE)
     }
 
     private fun advanceToNextPhase() {
@@ -167,9 +204,10 @@ class PomodoroService : Service() {
         }
     }
 
-    override fun onDestroy() {
+    override fun onDestroy(owner: LifecycleOwner) {
+        ProcessLifecycleOwner.get().lifecycle.removeObserver(this)
         serviceScope.cancel()
-        super.onDestroy()
+        super<DefaultLifecycleObserver>.onDestroy(owner)
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
