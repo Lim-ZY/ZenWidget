@@ -219,6 +219,9 @@ fun PomodoroTimer(timeString: String, textColor: Color) {
         color = textColor,
         fontSize = 96.sp,
         fontWeight = FontWeight.Light,
+        style = MaterialTheme.typography.displayLarge.copy(
+            fontFeatureSettings = "tnum"
+        ),
         modifier = Modifier.padding(bottom = 32.dp)
     )
 }
