@@ -82,7 +82,7 @@ fun PomodoroScreen(
     // Format time to MM:SS
     val minutes = TimeUnit.MILLISECONDS.toMinutes(timeLeftMs)
     val seconds = TimeUnit.MILLISECONDS.toSeconds(timeLeftMs) - TimeUnit.MINUTES.toSeconds(minutes)
-    val timeString = String.format("%02d:%02d", minutes, seconds)
+    val timeString = String.format(null, "%02d:%02d", minutes, seconds)
 
     Column(
         modifier = Modifier

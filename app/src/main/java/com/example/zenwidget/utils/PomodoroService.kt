@@ -134,7 +134,7 @@ class PomodoroService : Service() {
     private fun formatTime(ms: Long): String {
         val minutes = TimeUnit.MILLISECONDS.toMinutes(ms)
         val seconds = TimeUnit.MILLISECONDS.toSeconds(ms) - TimeUnit.MINUTES.toSeconds(minutes)
-        return String.format("%02d:%02d", minutes, seconds)
+        return String.format(null, "%02d:%02d", minutes, seconds)
     }
 
     private fun buildNotification(content: String): Notification {
