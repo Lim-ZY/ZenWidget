@@ -58,7 +58,7 @@ fun ZenMainScreen() {
     val database = AppDatabase.getDatabase(context)
     val dao = database.zenDao()
 
-    // 0 for Quotes, 1 for Actions
+    // 0 for Quotes, 1 for Actions, 2 for Pomodoro
     val pagerState = rememberPagerState(pageCount = { 3 })
     var isAddingItem by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -238,7 +238,8 @@ fun ZenPagerContent(
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    reverseLayout = true
                 ) {
                     items(currentItems) { item ->
                         GlassCard(
