@@ -1,6 +1,8 @@
 package com.example.zenwidget
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,11 +18,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
@@ -42,14 +45,17 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.zenwidget.data.AppDatabase
+import com.example.zenwidget.data.RepoItem
 import com.example.zenwidget.data.RepoType
 import com.example.zenwidget.data.ZenDao
 import com.example.zenwidget.ui.theme.GlassCard
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @Composable
@@ -61,6 +67,8 @@ fun ZenMainScreen() {
     // 0 for Quotes, 1 for Actions, 2 for Pomodoro
     val pagerState = rememberPagerState(pageCount = { 3 })
     var isAddingItem by remember { mutableStateOf(false) }
+    var isSelectionMode by remember { mutableStateOf(false) }
+    var selectedItems by remember { mutableStateOf(emptySet<Any>()) }
     val scope = rememberCoroutineScope()
     val backdrop = rememberLayerBackdrop() // For liquid glass API
 
@@ -78,15 +86,45 @@ fun ZenMainScreen() {
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                ZenTopBar(isAddingItem, pagerState.currentPage, backdrop)
+                ZenTopBar(
+                    isAddingItem = isAddingItem,
+                    currentPage = pagerState.currentPage,
+                    backdrop = backdrop,
+                    isSelectionMode = isSelectionMode,
+                    onCancel = {
+                        isSelectionMode = false
+                        selectedItems = emptySet()
+                    },
+                    onSelectAll = {
+                        scope.launch {
+                            val repo = if (pagerState.currentPage == 0) RepoType.QUOTES else RepoType.ACTIONS
+                            val allItems = dao.getItemsForRepo(repo).first()
+                            selectedItems = allItems.toSet()
+                        }
+                    })
             },
             bottomBar = {
-                ZenBottomBar(isAddingItem, pagerState.currentPage, backdrop) { targetPage ->
-                    scope.launch { pagerState.animateScrollToPage(targetPage) }
-                }
+                ZenBottomBar(
+                    isAddingItem = isAddingItem,
+                    currentPage = pagerState.currentPage,
+                    backdrop = backdrop,
+                    isSelectionMode = isSelectionMode,
+                    onDelete = {
+                        scope.launch {
+                            selectedItems.forEach { item -> dao.deleteItem(item as RepoItem) }
+                            isSelectionMode = false
+                            selectedItems = emptySet()
+                        }
+                    },
+                    onNavigate = { targetPage ->
+                        isSelectionMode = false
+                        selectedItems = emptySet()
+                        scope.launch { pagerState.animateScrollToPage(targetPage) }
+                    }
+                )
             },
             floatingActionButton = {
-                ZenFab(isAddingItem, pagerState.currentPage) { isAddingItem = true }
+                ZenFab(isAddingItem, pagerState.currentPage, isSelectionMode) { isAddingItem = true }
             }
         ) { paddingValues ->
             Box(modifier = Modifier.padding(paddingValues)) {
@@ -98,7 +136,23 @@ fun ZenMainScreen() {
                         onComplete = { isAddingItem = false }
                     )
                 } else {
-                    ZenPagerContent(pagerState,dao, backdrop)
+                    ZenPagerContent(
+                        pagerState = pagerState,
+                        dao = dao,
+                        backdrop = backdrop,
+                        isSelectionMode = isSelectionMode,
+                        selectedItems = selectedItems,
+                        onToggleSelection = { item ->
+                            selectedItems = if (selectedItems.contains(item)) {
+                                selectedItems - item
+                            } else {
+                                selectedItems + item
+                            }
+                        },
+                        onLongPress = { item ->
+                            isSelectionMode = true
+                            selectedItems = setOf(item)
+                        })
                 }
             }
         }
@@ -109,13 +163,40 @@ fun ZenMainScreen() {
 fun ZenTopBar(
     isAddingItem: Boolean,
     currentPage: Int,
-    backdrop: LayerBackdrop
+    backdrop: LayerBackdrop,
+    isSelectionMode: Boolean,
+    onCancel: () -> Unit,
+    onSelectAll: () -> Unit
 ) {
-    if (!isAddingItem) {
+    if (isSelectionMode) {
+        Row(
+            modifier = Modifier
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            GlassCard(modifier = Modifier.clickable { onCancel() }, backdrop = backdrop) {
+                Text(
+                    text = "Cancel",
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            GlassCard(modifier = Modifier.clickable { onSelectAll() }, backdrop = backdrop) {
+                Text(
+                    text = "Select all",
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold)
+            }
+        }
+    } else if (!isAddingItem) {
         GlassCard(
             modifier = Modifier
                 .windowInsetsPadding(WindowInsets.statusBars)
-                .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
             backdrop = backdrop
         ) {
             val titleText = when (currentPage) {
@@ -139,11 +220,32 @@ fun ZenBottomBar(
     isAddingItem: Boolean,
     currentPage: Int,
     backdrop: LayerBackdrop,
+    isSelectionMode: Boolean,
+    onDelete: () -> Unit,
     onNavigate: (Int) -> Unit
 ) {
-    if (!isAddingItem) {
+    if (isSelectionMode) {
         GlassCard(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .clickable { onDelete() },
+            backdrop = backdrop
+        ) {
+            Text(
+                text = "Delete",
+                color = Color(0xFFFF5252),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+        }
+    } else if (!isAddingItem) {
+        GlassCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
             backdrop = backdrop
         ) {
             Row(
@@ -199,9 +301,10 @@ fun OneMinActionLogo(currentPage: Int) {
 fun ZenFab(
     isAddingItem: Boolean,
     currentPage: Int,
+    isSelectionMode: Boolean,
     onClick: () -> Unit
 ) {
-    if (!isAddingItem && currentPage != 2) {
+    if (!isAddingItem && currentPage != 2 && !isSelectionMode) {
         FloatingActionButton(
             onClick = onClick,
             containerColor = Color.White.copy(alpha = 0.2f),
@@ -224,16 +327,22 @@ fun ZenFab(
 fun ZenPagerContent(
     pagerState: PagerState,
     dao: ZenDao,
-    backdrop: LayerBackdrop
+    backdrop: LayerBackdrop,
+    isSelectionMode: Boolean,
+    selectedItems: Set<Any>,
+    onToggleSelection: (Any) -> Unit,
+    onLongPress: (Any) -> Unit
 ) {
+    val quotes by dao.getItemsForRepo(RepoType.QUOTES).collectAsState(initial = emptyList())
+    val actions by dao.getItemsForRepo(RepoType.ACTIONS).collectAsState(initial = emptyList())
+
     HorizontalPager(
         state = pagerState,
         modifier = Modifier.fillMaxSize()
     ) { page ->
         when (page) {
             0, 1 -> {
-                val currentRepo = if (page == 0) RepoType.QUOTES else RepoType.ACTIONS
-                val currentItems by dao.getItemsForRepo(currentRepo).collectAsState(initial = emptyList())
+                val currentItems = if (page == 0) quotes else actions
 
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),
@@ -241,25 +350,57 @@ fun ZenPagerContent(
                     modifier = Modifier.fillMaxSize(),
                     reverseLayout = true
                 ) {
-                    items(currentItems) { item ->
+                    items(currentItems.size) { index ->
+                        val item = currentItems[index]
+                        val isSelected = selectedItems.contains(item as Any)
+
                         GlassCard(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .combinedClickable(
+                                    onClick = {
+                                        if (isSelectionMode) onToggleSelection(item as Any)
+                                    },
+                                    onLongClick = {
+                                        if (!isSelectionMode) onLongPress(item as Any)
+                                    }
+                                ),
                             backdrop = backdrop
                         ) {
-                            Column {
-                                Text(
-                                    text = item.text,
-                                    color = Color.White,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = item.caption,
-                                    color = Color.White.copy(alpha = 0.9f),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Normal
-                                )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(
+                                    modifier = Modifier.weight(1f).padding(end = 8.dp)
+                                ) {
+                                    Text(
+                                        text = item.text,
+                                        color = Color.White,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = item.caption,
+                                        color = Color.White.copy(alpha = 0.9f),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Normal
+                                    )
+                                }
+
+                                if (isSelectionMode) {
+                                    Checkbox(
+                                        checked = isSelected,
+                                        onCheckedChange = { onToggleSelection(item as Any) },
+                                        modifier = Modifier.padding(end = 4.dp),
+                                        colors = CheckboxDefaults.colors(
+                                            checkedColor = Color.White,
+                                            uncheckedColor = Color.White.copy(alpha = 0.5f),
+                                            checkmarkColor = Color.Black
+                                        )
+                                    )
+                                }
                             }
                         }
                     }

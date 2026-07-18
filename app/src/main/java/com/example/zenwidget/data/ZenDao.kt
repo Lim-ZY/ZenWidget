@@ -1,6 +1,7 @@
 package com.example.zenwidget.data
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
@@ -13,6 +14,9 @@ interface ZenDao {
 
     @Insert
     suspend fun insertItem(item: RepoItem)
+
+    @Delete
+    suspend fun deleteItem(item: RepoItem)
 
     // Optional: for cycling through items in the widget
     @Query("SELECT * FROM widget_items WHERE repoType = :repoType LIMIT 1 OFFSET :index")
