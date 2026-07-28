@@ -81,7 +81,7 @@ fun ZenMainScreen() {
     Box(modifier = Modifier.fillMaxSize()) {
         // Background Image
         Image(
-            painter = painterResource(id = R.drawable.pexels_sun_bg),
+            painter = painterResource(id = R.drawable.pexels_water_bg),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier

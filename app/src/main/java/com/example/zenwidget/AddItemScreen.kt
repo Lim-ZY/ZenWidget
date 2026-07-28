@@ -197,7 +197,9 @@ fun ZenInputField(
             unfocusedContainerColor = Color.Transparent,
             focusedContainerColor = Color.Transparent,
             unfocusedTextColor = Color.White,
-            focusedTextColor = Color.White
+            focusedTextColor = Color.White,
+            unfocusedIndicatorColor = Color.White,
+            focusedIndicatorColor = Color.White
         )
     )
 }
