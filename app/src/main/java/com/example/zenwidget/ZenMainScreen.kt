@@ -40,6 +40,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -50,12 +51,10 @@ import androidx.compose.ui.unit.dp
 import com.example.zenwidget.data.AppDatabase
 import com.example.zenwidget.data.RepoItem
 import com.example.zenwidget.data.RepoType
-import com.example.zenwidget.data.ZenDao
 import com.example.zenwidget.ui.theme.GlassCard
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @Composable
@@ -72,6 +71,13 @@ fun ZenMainScreen() {
     val scope = rememberCoroutineScope()
     val backdrop = rememberLayerBackdrop() // For liquid glass API
 
+    val quotes by dao.getItemsForRepo(RepoType.QUOTES).collectAsState(initial = emptyList())
+    val actions by dao.getItemsForRepo(RepoType.ACTIONS).collectAsState(initial = emptyList())
+
+    val currentItems = if (pagerState.currentPage == 0) quotes else actions
+    var totalCount = currentItems.size
+    var selectedCount = selectedItems.size
+
     Box(modifier = Modifier.fillMaxSize()) {
         // Background Image
         Image(
@@ -87,19 +93,19 @@ fun ZenMainScreen() {
             containerColor = Color.Transparent,
             topBar = {
                 ZenTopBar(
-                    isAddingItem = isAddingItem,
-                    currentPage = pagerState.currentPage,
                     backdrop = backdrop,
+                    currentPage = pagerState.currentPage,
+                    isAddingItem = isAddingItem,
                     isSelectionMode = isSelectionMode,
+                    selectedCount = selectedCount,
+                    totalCount = totalCount,
                     onCancel = {
                         isSelectionMode = false
                         selectedItems = emptySet()
                     },
-                    onSelectAll = {
+                    onToggleSelectAll = {
                         scope.launch {
-                            val repo = if (pagerState.currentPage == 0) RepoType.QUOTES else RepoType.ACTIONS
-                            val allItems = dao.getItemsForRepo(repo).first()
-                            selectedItems = allItems.toSet()
+                            selectedItems = if (selectedCount == totalCount) emptySet() else currentItems.toSet()
                         }
                     })
             },
@@ -138,7 +144,7 @@ fun ZenMainScreen() {
                 } else {
                     ZenPagerContent(
                         pagerState = pagerState,
-                        dao = dao,
+                        currentItems = currentItems,
                         backdrop = backdrop,
                         isSelectionMode = isSelectionMode,
                         selectedItems = selectedItems,
@@ -161,14 +167,18 @@ fun ZenMainScreen() {
 
 @Composable
 fun ZenTopBar(
-    isAddingItem: Boolean,
-    currentPage: Int,
     backdrop: LayerBackdrop,
+    currentPage: Int,
+    isAddingItem: Boolean,
     isSelectionMode: Boolean,
+    selectedCount: Int,
+    totalCount: Int,
     onCancel: () -> Unit,
-    onSelectAll: () -> Unit
+    onToggleSelectAll: () -> Unit
 ) {
     if (isSelectionMode) {
+        val isAllSelected = totalCount > 0 && selectedCount == totalCount
+
         Row(
             modifier = Modifier
                 .windowInsetsPadding(WindowInsets.statusBars)
@@ -176,7 +186,10 @@ fun ZenTopBar(
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            GlassCard(modifier = Modifier.clickable { onCancel() }, backdrop = backdrop) {
+            GlassCard(
+                modifier = Modifier.clip(RoundedCornerShape(20.dp)).clickable { onCancel() },
+                backdrop = backdrop
+            ) {
                 Text(
                     text = "Cancel",
                     color = Color.White,
@@ -184,9 +197,12 @@ fun ZenTopBar(
                     fontWeight = FontWeight.Bold,
                 )
             }
-            GlassCard(modifier = Modifier.clickable { onSelectAll() }, backdrop = backdrop) {
+            GlassCard(
+                modifier = Modifier.clip(RoundedCornerShape(20.dp)).clickable { onToggleSelectAll() },
+                backdrop = backdrop
+            ) {
                 Text(
-                    text = "Select all",
+                    text = if (isAllSelected) "Deselect all" else "Select all",
                     color = Color.White,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold)
@@ -235,7 +251,7 @@ fun ZenBottomBar(
             Text(
                 text = "Delete",
                 color = Color(0xFFFF5252),
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(16.dp).fillMaxWidth(),
                 textAlign = TextAlign.Center
@@ -326,15 +342,13 @@ fun ZenFab(
 @Composable
 fun ZenPagerContent(
     pagerState: PagerState,
-    dao: ZenDao,
+    currentItems: List<RepoItem>,
     backdrop: LayerBackdrop,
     isSelectionMode: Boolean,
     selectedItems: Set<Any>,
     onToggleSelection: (Any) -> Unit,
     onLongPress: (Any) -> Unit
 ) {
-    val quotes by dao.getItemsForRepo(RepoType.QUOTES).collectAsState(initial = emptyList())
-    val actions by dao.getItemsForRepo(RepoType.ACTIONS).collectAsState(initial = emptyList())
 
     HorizontalPager(
         state = pagerState,
@@ -342,8 +356,6 @@ fun ZenPagerContent(
     ) { page ->
         when (page) {
             0, 1 -> {
-                val currentItems = if (page == 0) quotes else actions
-
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -357,6 +369,7 @@ fun ZenPagerContent(
                         GlassCard(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .clip(RoundedCornerShape(20.dp))
                                 .combinedClickable(
                                     onClick = {
                                         if (isSelectionMode) onToggleSelection(item as Any)
@@ -395,9 +408,9 @@ fun ZenPagerContent(
                                         onCheckedChange = { onToggleSelection(item as Any) },
                                         modifier = Modifier.padding(end = 4.dp),
                                         colors = CheckboxDefaults.colors(
-                                            checkedColor = Color.White,
+                                            checkedColor = Color.White.copy(alpha = 0.1f),
                                             uncheckedColor = Color.White.copy(alpha = 0.5f),
-                                            checkmarkColor = Color.Black
+                                            checkmarkColor = Color.White
                                         )
                                     )
                                 }
