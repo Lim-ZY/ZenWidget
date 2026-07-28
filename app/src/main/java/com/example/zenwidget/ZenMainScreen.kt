@@ -349,9 +349,9 @@ fun ZenPagerContent(
     onToggleSelection: (Any) -> Unit,
     onLongPress: (Any) -> Unit
 ) {
-
     HorizontalPager(
         state = pagerState,
+        userScrollEnabled = !isSelectionMode,
         modifier = Modifier.fillMaxSize()
     ) { page ->
         when (page) {
