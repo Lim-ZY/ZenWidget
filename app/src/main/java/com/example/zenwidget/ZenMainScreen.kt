@@ -182,7 +182,7 @@ fun ZenTopBar(
         Row(
             modifier = Modifier
                 .windowInsetsPadding(WindowInsets.statusBars)
-                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                .padding(start = 8.dp, end = 8.dp, bottom = 16.dp)
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -212,7 +212,7 @@ fun ZenTopBar(
         GlassCard(
             modifier = Modifier
                 .windowInsetsPadding(WindowInsets.statusBars)
-                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                .padding(start = 8.dp, end = 8.dp, bottom = 16.dp),
             backdrop = backdrop
         ) {
             val titleText = when (currentPage) {
@@ -244,7 +244,7 @@ fun ZenBottomBar(
         GlassCard(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(8.dp)
                 .clickable { onDelete() },
             backdrop = backdrop
         ) {
@@ -261,7 +261,7 @@ fun ZenBottomBar(
         GlassCard(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 8.dp, vertical = 12.dp),
             backdrop = backdrop
         ) {
             Row(
@@ -357,7 +357,7 @@ fun ZenPagerContent(
         when (page) {
             0, 1 -> {
                 LazyColumn(
-                    contentPadding = PaddingValues(12.dp),
+                    contentPadding = PaddingValues(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxSize(),
                 ) {
@@ -394,13 +394,15 @@ fun ZenPagerContent(
                                         style = MaterialTheme.typography.bodyLarge,
                                         fontWeight = FontWeight.Bold
                                     )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = item.caption,
-                                        color = Color.White.copy(alpha = 0.9f),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Normal
-                                    )
+                                    if (item.caption != "" ) {
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = item.caption,
+                                            color = Color.White.copy(alpha = 0.9f),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Normal
+                                        )
+                                    }
                                 }
 
                                 if (isSelectionMode) {
