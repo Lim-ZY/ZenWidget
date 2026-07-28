@@ -357,13 +357,14 @@ fun ZenPagerContent(
         when (page) {
             0, 1 -> {
                 LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxSize(),
-                    reverseLayout = true
                 ) {
-                    items(currentItems.size) { index ->
-                        val item = currentItems[index]
+                    val reversedItems = currentItems.asReversed()
+
+                    items(reversedItems.size) { index ->
+                        val item = reversedItems[index]
                         val isSelected = selectedItems.contains(item as Any)
 
                         GlassCard(
