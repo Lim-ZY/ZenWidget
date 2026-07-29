@@ -1,5 +1,6 @@
 package com.example.zenwidget
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -85,6 +86,11 @@ fun ZenMainScreen() {
     val currentItems = if (pagerState.currentPage == 0) quotes else actions
     var totalCount = currentItems.size
     var selectedCount = selectedItems.size
+
+    BackHandler(enabled = isSelectionMode) {
+        isSelectionMode = false
+        selectedItems = emptySet()
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Background Image
