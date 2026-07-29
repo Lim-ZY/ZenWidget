@@ -1,11 +1,18 @@
 package com.example.zenwidget
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,6 +20,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -99,10 +107,6 @@ fun ZenMainScreen() {
                     isSelectionMode = isSelectionMode,
                     selectedCount = selectedCount,
                     totalCount = totalCount,
-                    onCancel = {
-                        isSelectionMode = false
-                        selectedItems = emptySet()
-                    },
                     onToggleSelectAll = {
                         scope.launch {
                             selectedItems = if (selectedCount == totalCount) emptySet() else currentItems.toSet()
@@ -115,6 +119,10 @@ fun ZenMainScreen() {
                     currentPage = pagerState.currentPage,
                     backdrop = backdrop,
                     isSelectionMode = isSelectionMode,
+                    onCancel = {
+                        isSelectionMode = false
+                        selectedItems = emptySet()
+                    },
                     onDelete = {
                         scope.launch {
                             selectedItems.forEach { item -> dao.deleteItem(item as RepoItem) }
@@ -173,7 +181,6 @@ fun ZenTopBar(
     isSelectionMode: Boolean,
     selectedCount: Int,
     totalCount: Int,
-    onCancel: () -> Unit,
     onToggleSelectAll: () -> Unit
 ) {
     if (isSelectionMode) {
@@ -187,11 +194,11 @@ fun ZenTopBar(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             GlassCard(
-                modifier = Modifier.clip(RoundedCornerShape(20.dp)).clickable { onCancel() },
+                modifier = Modifier.clip(RoundedCornerShape(20.dp)),
                 backdrop = backdrop
             ) {
                 Text(
-                    text = "Cancel",
+                    text = if (selectedCount == 0) "Select Item" else "$selectedCount Selected",
                     color = Color.White,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
@@ -237,55 +244,96 @@ fun ZenBottomBar(
     currentPage: Int,
     backdrop: LayerBackdrop,
     isSelectionMode: Boolean,
+    onCancel: () -> Unit,
     onDelete: () -> Unit,
     onNavigate: (Int) -> Unit
 ) {
-    if (isSelectionMode) {
-        GlassCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp)
-                .clickable { onDelete() },
-            backdrop = backdrop
-        ) {
-            Text(
-                text = "Delete",
-                color = Color(0xFFFF5252),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
-        }
-    } else if (!isAddingItem) {
-        GlassCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 12.dp),
-            backdrop = backdrop
-        ) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .windowInsetsPadding(WindowInsets.navigationBars)
+            .padding(start = 8.dp, end = 8.dp)
+    ) {
+        if (isSelectionMode) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                IconButton(onClick = { onNavigate(0) }) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_symbol_chat_bubble),
-                        contentDescription = "Quotes",
-                        modifier = Modifier.size(28.dp),
-                        tint = if (currentPage == 0) Color.White else Color.White.copy(alpha = 0.5f),
+                GlassCard(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(20.dp))
+                        .clickable { onCancel() },
+                    backdrop = backdrop
+                ) {
+                    Text(
+                        text = "Cancel",
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        textAlign = TextAlign.Center
                     )
                 }
-                IconButton(onClick = { onNavigate(1) }) {
-                    OneMinActionLogo(currentPage)
-                }
-                IconButton(onClick = { onNavigate(2) }) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_symbol_hourglass),
-                        contentDescription = "Pomodoro Timer",
-                        modifier = Modifier.size(28.dp),
-                        tint = if (currentPage == 2) Color.White else Color.White.copy(alpha = 0.5f),
+
+                GlassCard(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(20.dp))
+                        .clickable { onDelete() },
+                    backdrop = backdrop
+                ) {
+                    Text(
+                        text = "Delete",
+                        color = Color(0xFFFF5252),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        textAlign = TextAlign.Center
                     )
+                }
+            }
+        } else if (!isAddingItem) {
+            GlassCard(
+                modifier = Modifier.fillMaxWidth(),
+                backdrop = backdrop
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 4.dp, end = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = { onNavigate(0) },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_symbol_chat_bubble),
+                            contentDescription = "Quotes",
+                            modifier = Modifier.size(28.dp),
+                            tint = if (currentPage == 0) Color.White else Color.White.copy(alpha = 0.5f),
+                        )
+                    }
+                    IconButton(
+                        onClick = { onNavigate(1) },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        OneMinActionLogo(currentPage)
+                    }
+                    IconButton(
+                        onClick = { onNavigate(2) },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_symbol_hourglass),
+                            contentDescription = "Pomodoro Timer",
+                            modifier = Modifier.size(28.dp),
+                            tint = if (currentPage == 2) Color.White else Color.White.copy(alpha = 0.5f),
+                        )
+                    }
                 }
             }
         }
@@ -382,7 +430,9 @@ fun ZenPagerContent(
                             backdrop = backdrop
                         ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(IntrinsicSize.Min),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(
@@ -405,11 +455,26 @@ fun ZenPagerContent(
                                     }
                                 }
 
-                                if (isSelectionMode) {
+                                AnimatedVisibility(
+                                    visible = isSelectionMode,
+                                    enter =
+                                        fadeIn(
+                                            animationSpec = tween(durationMillis = 200)
+                                        ) + slideInHorizontally(
+                                            animationSpec = tween(durationMillis = 200)) { fullWidth ->
+                                            fullWidth
+                                        },
+                                    exit =
+                                        fadeOut(
+                                            animationSpec = tween(durationMillis = 200)
+                                        ) + slideOutHorizontally(
+                                            animationSpec = tween(durationMillis = 200)) { fullWidth ->
+                                            200
+                                        },
+                                ) {
                                     Checkbox(
                                         checked = isSelected,
                                         onCheckedChange = { onToggleSelection(item as Any) },
-                                        modifier = Modifier.padding(end = 4.dp),
                                         colors = CheckboxDefaults.colors(
                                             checkedColor = Color.White.copy(alpha = 0.1f),
                                             uncheckedColor = Color.White.copy(alpha = 0.5f),
