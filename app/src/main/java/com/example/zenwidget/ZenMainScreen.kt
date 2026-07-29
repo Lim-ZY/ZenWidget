@@ -66,14 +66,19 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.launch
 
+enum class ZenPage {
+    QUOTES,
+    ACTIONS,
+    POMODORO
+}
+
 @Composable
 fun ZenMainScreen() {
     val context = LocalContext.current
     val database = AppDatabase.getDatabase(context)
     val dao = database.zenDao()
 
-    // 0 for Quotes, 1 for Actions, 2 for Pomodoro
-    val pagerState = rememberPagerState(pageCount = { 3 })
+    val pagerState = rememberPagerState(pageCount = { ZenPage.entries.size })
     var isAddingItem by remember { mutableStateOf(false) }
     var isSelectionMode by remember { mutableStateOf(false) }
     var selectedItems by remember { mutableStateOf(emptySet<Any>()) }
@@ -83,9 +88,14 @@ fun ZenMainScreen() {
     val quotes by dao.getItemsForRepo(RepoType.QUOTES).collectAsState(initial = emptyList())
     val actions by dao.getItemsForRepo(RepoType.ACTIONS).collectAsState(initial = emptyList())
 
-    val currentItems = if (pagerState.currentPage == 0) quotes else actions
-    var totalCount = currentItems.size
-    var selectedCount = selectedItems.size
+    val currentPage = ZenPage.entries[pagerState.currentPage]
+    val currentItems = when (currentPage) {
+        ZenPage.QUOTES -> quotes
+        ZenPage.ACTIONS -> actions
+        ZenPage.POMODORO -> emptyList()
+    }
+    val totalCount = currentItems.size
+    val selectedCount = selectedItems.size
 
     BackHandler(enabled = isSelectionMode) {
         isSelectionMode = false
@@ -108,7 +118,7 @@ fun ZenMainScreen() {
             topBar = {
                 ZenTopBar(
                     backdrop = backdrop,
-                    currentPage = pagerState.currentPage,
+                    currentPage = currentPage,
                     isAddingItem = isAddingItem,
                     isSelectionMode = isSelectionMode,
                     selectedCount = selectedCount,
@@ -122,7 +132,7 @@ fun ZenMainScreen() {
             bottomBar = {
                 ZenBottomBar(
                     isAddingItem = isAddingItem,
-                    currentPage = pagerState.currentPage,
+                    currentPage = currentPage,
                     backdrop = backdrop,
                     isSelectionMode = isSelectionMode,
                     onCancel = {
@@ -139,19 +149,19 @@ fun ZenMainScreen() {
                     onNavigate = { targetPage ->
                         isSelectionMode = false
                         selectedItems = emptySet()
-                        scope.launch { pagerState.animateScrollToPage(targetPage) }
+                        scope.launch { pagerState.animateScrollToPage(targetPage.ordinal) }
                     }
                 )
             },
             floatingActionButton = {
-                ZenFab(isAddingItem, pagerState.currentPage, isSelectionMode) { isAddingItem = true }
+                ZenFab(isAddingItem, currentPage, isSelectionMode) { isAddingItem = true }
             }
         ) { paddingValues ->
             Box(modifier = Modifier.padding(paddingValues)) {
                 if (isAddingItem) {
                     AddItemScreen(
                         backdrop = backdrop,
-                        selectedRepo = if (pagerState.currentPage == 0) RepoType.QUOTES else RepoType.ACTIONS,
+                        selectedRepo = if (currentPage == ZenPage.QUOTES) RepoType.QUOTES else RepoType.ACTIONS,
                         dao = dao,
                         onComplete = { isAddingItem = false }
                     )
@@ -182,7 +192,7 @@ fun ZenMainScreen() {
 @Composable
 fun ZenTopBar(
     backdrop: LayerBackdrop,
-    currentPage: Int,
+    currentPage: ZenPage,
     isAddingItem: Boolean,
     isSelectionMode: Boolean,
     selectedCount: Int,
@@ -199,27 +209,15 @@ fun ZenTopBar(
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            GlassCard(
-                modifier = Modifier.clip(RoundedCornerShape(20.dp)),
+            ZenTextCard(
+                text = if (selectedCount == 0) "Select Item" else "$selectedCount Selected",
                 backdrop = backdrop
-            ) {
-                Text(
-                    text = if (selectedCount == 0) "Select Item" else "$selectedCount Selected",
-                    color = Color.White,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
-            GlassCard(
-                modifier = Modifier.clip(RoundedCornerShape(20.dp)).clickable { onToggleSelectAll() },
-                backdrop = backdrop
-            ) {
-                Text(
-                    text = if (isAllSelected) "Deselect all" else "Select all",
-                    color = Color.White,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold)
-            }
+            )
+            ZenTextCard(
+                text = if (isAllSelected) "Deselect all" else "Select all",
+                backdrop = backdrop,
+                onClick = onToggleSelectAll
+            )
         }
     } else if (!isAddingItem) {
         GlassCard(
@@ -229,9 +227,9 @@ fun ZenTopBar(
             backdrop = backdrop
         ) {
             val titleText = when (currentPage) {
-                0 -> "Quotes"
-                1 -> "1-min Actions"
-                else -> "Focus"
+                ZenPage.QUOTES -> "Quotes"
+                ZenPage.ACTIONS -> "1-min Actions"
+                ZenPage.POMODORO -> "Focus"
             }
 
             Text(
@@ -247,12 +245,12 @@ fun ZenTopBar(
 @Composable
 fun ZenBottomBar(
     isAddingItem: Boolean,
-    currentPage: Int,
+    currentPage: ZenPage,
     backdrop: LayerBackdrop,
     isSelectionMode: Boolean,
     onCancel: () -> Unit,
     onDelete: () -> Unit,
-    onNavigate: (Int) -> Unit
+    onNavigate: (ZenPage) -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -266,39 +264,22 @@ fun ZenBottomBar(
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                GlassCard(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(20.dp))
-                        .clickable { onCancel() },
-                    backdrop = backdrop
-                ) {
-                    Text(
-                        text = "Cancel",
-                        color = Color.White,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        textAlign = TextAlign.Center
-                    )
-                }
+                ZenTextCard(
+                    text = "Cancel",
+                    backdrop = backdrop,
+                    modifier = Modifier.weight(1f),
+                    textModifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    onClick = onCancel
+                )
 
-                GlassCard(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(20.dp))
-                        .clickable { onDelete() },
-                    backdrop = backdrop
-                ) {
-                    Text(
-                        text = "Delete",
-                        color = Color(0xFFFF5252),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        textAlign = TextAlign.Center
-                    )
-                }
+                ZenTextCard(
+                    text = "Delete",
+                    textColor = Color(0xFFFF5252),
+                    backdrop = backdrop,
+                    modifier = Modifier.weight(1f),
+                    textModifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    onClick = onDelete
+                )
             }
         } else if (!isAddingItem) {
             GlassCard(
@@ -312,32 +293,23 @@ fun ZenBottomBar(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(
-                        onClick = { onNavigate(0) },
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
+                    ZenNavItem(onClick = { onNavigate(ZenPage.QUOTES) }, isSelected = currentPage == ZenPage.QUOTES) {
+                        tint -> Icon(
                             painter = painterResource(id = R.drawable.ic_symbol_chat_bubble),
                             contentDescription = "Quotes",
                             modifier = Modifier.size(28.dp),
-                            tint = if (currentPage == 0) Color.White else Color.White.copy(alpha = 0.5f),
+                            tint = tint
                         )
                     }
-                    IconButton(
-                        onClick = { onNavigate(1) },
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        OneMinActionLogo(currentPage)
+                    ZenNavItem(onClick = { onNavigate(ZenPage.QUOTES) }, isSelected = currentPage == ZenPage.ACTIONS) {
+                        tint -> OneMinActionLogo(tint)
                     }
-                    IconButton(
-                        onClick = { onNavigate(2) },
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
+                    ZenNavItem(onClick = { onNavigate(ZenPage.POMODORO) }, isSelected = currentPage == ZenPage.POMODORO) {
+                        tint -> Icon(
                             painter = painterResource(id = R.drawable.ic_symbol_hourglass),
                             contentDescription = "Pomodoro Timer",
                             modifier = Modifier.size(28.dp),
-                            tint = if (currentPage == 2) Color.White else Color.White.copy(alpha = 0.5f),
+                            tint = tint
                         )
                     }
                 }
@@ -347,13 +319,59 @@ fun ZenBottomBar(
 }
 
 @Composable
-fun OneMinActionLogo(currentPage: Int) {
+fun ZenTextCard(
+    text: String,
+    backdrop: LayerBackdrop,
+    modifier: Modifier = Modifier,
+    textModifier: Modifier = Modifier,
+    textColor: Color = Color.White,
+    onClick: (() -> Unit)? = null
+) {
+    var cardModifier = modifier.clip(RoundedCornerShape(20.dp))
+    if (onClick != null) {
+        cardModifier = cardModifier.clickable { onClick() }
+    }
+
+    GlassCard(
+        modifier = cardModifier,
+        backdrop = backdrop
+    ) {
+        Text(
+            text = text,
+            color = textColor,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = textModifier,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+fun ZenNavItem(
+    onClick: () -> Unit,
+    isSelected: Boolean,
+    content: @Composable (tint: Color) -> Unit
+) {
+    val tint = if (isSelected) Color.White else Color.White.copy(alpha = 0.5f)
+
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier.size(36.dp)
+    ) {
+        content(tint)
+    }
+
+}
+
+@Composable
+fun OneMinActionLogo(tint: Color) {
     Box(modifier = Modifier.size(28.dp)) {
         Icon(
             painter = painterResource(id = R.drawable.ic_sentiment_calm),
             contentDescription = "1-min Actions",
             modifier = Modifier.fillMaxSize(),
-            tint = if (currentPage == 1) Color.White else Color.White.copy(alpha = 0.5f)
+            tint = tint
         )
 
         Icon(
@@ -362,7 +380,7 @@ fun OneMinActionLogo(currentPage: Int) {
             modifier = Modifier
                 .size(7.dp)
                 .align(Alignment.TopEnd),
-            tint = if (currentPage == 1) Color.White else Color.White.copy(alpha = 0.5f)
+            tint = tint
         )
     }
 }
@@ -370,11 +388,11 @@ fun OneMinActionLogo(currentPage: Int) {
 @Composable
 fun ZenFab(
     isAddingItem: Boolean,
-    currentPage: Int,
+    currentPage: ZenPage,
     isSelectionMode: Boolean,
     onClick: () -> Unit
 ) {
-    if (!isAddingItem && currentPage != 2 && !isSelectionMode) {
+    if (!isAddingItem && currentPage != ZenPage.POMODORO && !isSelectionMode) {
         FloatingActionButton(
             onClick = onClick,
             containerColor = Color.White.copy(alpha = 0.2f),
@@ -407,9 +425,11 @@ fun ZenPagerContent(
         state = pagerState,
         userScrollEnabled = !isSelectionMode,
         modifier = Modifier.fillMaxSize()
-    ) { page ->
+    ) { pageIdx ->
+        val page = ZenPage.entries.getOrElse(pageIdx) { ZenPage.QUOTES }
+
         when (page) {
-            0, 1 -> {
+            ZenPage.QUOTES, ZenPage.ACTIONS -> {
                 LazyColumn(
                     contentPadding = PaddingValues(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -493,7 +513,7 @@ fun ZenPagerContent(
                     }
                 }
             }
-            2 -> {
+            ZenPage.POMODORO -> {
                 PomodoroScreen(backdrop)
             }
         }
