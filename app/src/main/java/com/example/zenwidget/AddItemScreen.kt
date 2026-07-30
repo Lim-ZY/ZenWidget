@@ -49,6 +49,7 @@ fun AddItemScreen(
     backdrop: LayerBackdrop,
     selectedRepo: RepoType,
     dao: ZenDao,
+    initialItem: RepoItem? = null,
     onComplete: () -> Unit
 ) {
     BackHandler(enabled = true) {
@@ -59,9 +60,9 @@ fun AddItemScreen(
     val coroutineScope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
-    var targetRepo by remember { mutableStateOf(selectedRepo) }
-    var inputText by remember { mutableStateOf("") }
-    var captionText by remember { mutableStateOf("") }
+    var targetRepo by remember { mutableStateOf(initialItem?.repoType ?: selectedRepo) }
+    var inputText by remember { mutableStateOf(initialItem?.text ?: "") }
+    var captionText by remember { mutableStateOf(initialItem?.caption ?: "") }
 
     Column(
         modifier = Modifier
@@ -77,7 +78,7 @@ fun AddItemScreen(
         ) {
             Column {
                 Text(
-                    "Add to Zen",
+                    if (initialItem == null) "Add to Zen" else "Update",
                     color = Color.White,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
@@ -85,12 +86,14 @@ fun AddItemScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                RepositorySelector(
-                    currentRepo = targetRepo,
-                    onRepoSelected = { targetRepo = it }
-                )
+                if (initialItem != null) {
+                    RepositorySelector(
+                        currentRepo = targetRepo,
+                        onRepoSelected = { targetRepo = it }
+                    )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
 
                 ZenInputField(
                     inputText = inputText,
@@ -109,10 +112,15 @@ fun AddItemScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 ActionButtons(
+                    isUpdate = initialItem != null,
                     onCancel = onComplete,
                     onSave = {
-                        if (inputText.isNotBlank()) {
-                            coroutineScope.launch {
+                        coroutineScope.launch {
+                            if (inputText.isNotBlank() && initialItem != null) {
+                                val updatedItem = initialItem.copy(text = inputText, caption = captionText)
+                                dao.updateItem(updatedItem)
+                                onComplete()
+                            } else if (inputText.isNotBlank()) {
                                 dao.insertItem(
                                     RepoItem(
                                         repoType = targetRepo,
@@ -206,6 +214,7 @@ fun ZenInputField(
 
 @Composable
 fun ActionButtons(
+    isUpdate: Boolean,
     onCancel: () -> Unit,
     onSave: () -> Unit
 ) {
@@ -217,7 +226,7 @@ fun ActionButtons(
             Text("Cancel", color = Color.White)
         }
         Button(onClick = onSave) {
-            Text("Save")
+            Text(if (isUpdate) "Update" else "Add")
         }
     }
 }

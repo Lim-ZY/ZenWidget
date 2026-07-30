@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -14,6 +15,9 @@ interface ZenDao {
 
     @Insert
     suspend fun insertItem(item: RepoItem)
+
+    @Update
+    suspend fun updateItem(item: RepoItem)
 
     @Delete
     suspend fun deleteItem(item: RepoItem)

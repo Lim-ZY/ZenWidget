@@ -109,7 +109,8 @@ fun ZenMainScreen() {
     val dao = database.zenDao()
 
     val pagerState = rememberPagerState(pageCount = { ZenPage.entries.size })
-    var isAddingItem by remember { mutableStateOf(false) }
+    var isEditorOpen by remember { mutableStateOf(false) }
+    var itemToEdit by remember { mutableStateOf<RepoItem?>(null) }
     var isSelectionMode by remember { mutableStateOf(false) }
     var selectedItems by remember { mutableStateOf(emptySet<Any>()) }
     val scope = rememberCoroutineScope()
@@ -149,7 +150,7 @@ fun ZenMainScreen() {
                 ZenTopBar(
                     backdrop = backdrop,
                     currentPage = currentPage,
-                    isAddingItem = isAddingItem,
+                    isEditorOpen = isEditorOpen,
                     isSelectionMode = isSelectionMode,
                     selectedCount = selectedCount,
                     totalCount = totalCount,
@@ -161,7 +162,7 @@ fun ZenMainScreen() {
             },
             bottomBar = {
                 ZenBottomBar(
-                    isAddingItem = isAddingItem,
+                    isEditorOpen = isEditorOpen,
                     currentPage = currentPage,
                     backdrop = backdrop,
                     isSelectionMode = isSelectionMode,
@@ -184,16 +185,23 @@ fun ZenMainScreen() {
                 )
             },
             floatingActionButton = {
-                ZenFab(isAddingItem, currentPage, isSelectionMode) { isAddingItem = true }
+                ZenFab(isEditorOpen, currentPage, isSelectionMode) {
+                    isEditorOpen = true
+                    itemToEdit = null
+                }
             }
         ) { paddingValues ->
             Box(modifier = Modifier.padding(paddingValues)) {
-                if (isAddingItem) {
+                if (isEditorOpen) {
                     AddItemScreen(
                         backdrop = backdrop,
                         selectedRepo = if (currentPage == ZenPage.QUOTES) RepoType.QUOTES else RepoType.ACTIONS,
                         dao = dao,
-                        onComplete = { isAddingItem = false }
+                        initialItem = itemToEdit,
+                        onComplete = {
+                            isEditorOpen = false
+                            itemToEdit = null
+                        }
                     )
                 } else {
                     ZenPagerContent(
@@ -212,6 +220,10 @@ fun ZenMainScreen() {
                         onLongPress = { item ->
                             isSelectionMode = true
                             selectedItems = setOf(item)
+                        },
+                        onEdit = { item ->
+                            itemToEdit = item
+                            isEditorOpen = true
                         })
                 }
             }
@@ -223,7 +235,7 @@ fun ZenMainScreen() {
 fun ZenTopBar(
     backdrop: LayerBackdrop,
     currentPage: ZenPage,
-    isAddingItem: Boolean,
+    isEditorOpen: Boolean,
     isSelectionMode: Boolean,
     selectedCount: Int,
     totalCount: Int,
@@ -255,7 +267,7 @@ fun ZenTopBar(
                     onClick = onToggleSelectAll
                 )
             }
-        } else if (!isAddingItem) {
+        } else if (!isEditorOpen) {
             GlassCard(
                 modifier = Modifier
                     .windowInsetsPadding(WindowInsets.statusBars)
@@ -281,7 +293,7 @@ fun ZenTopBar(
 
 @Composable
 fun ZenBottomBar(
-    isAddingItem: Boolean,
+    isEditorOpen: Boolean,
     currentPage: ZenPage,
     backdrop: LayerBackdrop,
     isSelectionMode: Boolean,
@@ -324,7 +336,7 @@ fun ZenBottomBar(
                         onClick = onDelete
                     )
                 }
-            } else if (!isAddingItem) {
+            } else if (!isEditorOpen) {
                 GlassCard(
                     modifier = Modifier.fillMaxWidth(),
                     backdrop = backdrop
@@ -440,12 +452,12 @@ fun OneMinActionLogo(tint: Color) {
 
 @Composable
 fun ZenFab(
-    isAddingItem: Boolean,
+    isEditorOpen: Boolean,
     currentPage: ZenPage,
     isSelectionMode: Boolean,
     onClick: () -> Unit
 ) {
-    if (!isAddingItem && currentPage != ZenPage.POMODORO && !isSelectionMode) {
+    if (!isEditorOpen && currentPage != ZenPage.POMODORO && !isSelectionMode) {
         FloatingActionButton(
             onClick = onClick,
             containerColor = Color.White.copy(alpha = 0.2f),
@@ -472,7 +484,8 @@ fun ZenPagerContent(
     isSelectionMode: Boolean,
     selectedItems: Set<Any>,
     onToggleSelection: (Any) -> Unit,
-    onLongPress: (Any) -> Unit
+    onLongPress: (Any) -> Unit,
+    onEdit: (RepoItem) -> Unit
 ) {
     HorizontalPager(
         state = pagerState,
@@ -500,8 +513,7 @@ fun ZenPagerContent(
                                 .clip(RoundedCornerShape(20.dp))
                                 .combinedClickable(
                                     onClick = {
-                                        if (isSelectionMode) onToggleSelection(item as Any)
-                                    },
+                                        if (isSelectionMode) onToggleSelection(item as Any) else onEdit(item) },
                                     onLongClick = {
                                         if (!isSelectionMode) onLongPress(item as Any)
                                     }
