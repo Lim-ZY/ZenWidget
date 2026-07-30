@@ -1,12 +1,17 @@
 package com.example.zenwidget
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -59,6 +64,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.zenwidget.data.AppDatabase
 import com.example.zenwidget.data.RepoItem
@@ -73,6 +79,27 @@ enum class ZenPage {
     QUOTES,
     ACTIONS,
     POMODORO
+}
+
+object ZenAnimations {
+    private const val DURATION = 250
+    val slideSpec = tween<IntOffset>(durationMillis = DURATION, easing = FastOutSlowInEasing)
+    val fadeSpec = tween<Float>(durationMillis = DURATION, easing = FastOutSlowInEasing)
+
+    val zenFadeIn = fadeIn(animationSpec = fadeSpec)
+    val zenFadeOut = fadeOut(animationSpec = fadeSpec)
+
+    val topTransition = (
+        slideInVertically(animationSpec = slideSpec) { height -> -height } + zenFadeIn
+    ) togetherWith (
+        slideOutVertically(slideSpec) { height -> -height } + zenFadeOut
+    )
+
+    val bottomTransition = (
+        slideInVertically(animationSpec = slideSpec) { height -> height } + zenFadeIn
+    ) togetherWith (
+        slideOutVertically(slideSpec) { height -> height } + zenFadeOut
+    )
 }
 
 @Composable
@@ -202,45 +229,52 @@ fun ZenTopBar(
     totalCount: Int,
     onToggleSelectAll: () -> Unit
 ) {
-    if (isSelectionMode) {
-        val isAllSelected = totalCount > 0 && selectedCount == totalCount
+    AnimatedContent(
+        targetState = isSelectionMode,
+        transitionSpec = { ZenAnimations.topTransition },
+        contentAlignment = Alignment.TopCenter,
+        label = "ZenTopBarTransition"
+    ) { selectionActive ->
+        if (selectionActive) {
+            val isAllSelected = totalCount > 0 && selectedCount == totalCount
 
-        Row(
-            modifier = Modifier
-                .windowInsetsPadding(WindowInsets.statusBars)
-                .padding(start = 8.dp, end = 8.dp, bottom = 16.dp)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            ZenTextCard(
-                text = if (selectedCount == 0) "Select Item" else "$selectedCount Selected",
-                backdrop = backdrop
-            )
-            ZenTextCard(
-                text = if (isAllSelected) "Deselect all" else "Select all",
-                backdrop = backdrop,
-                onClick = onToggleSelectAll
-            )
-        }
-    } else if (!isAddingItem) {
-        GlassCard(
-            modifier = Modifier
-                .windowInsetsPadding(WindowInsets.statusBars)
-                .padding(start = 8.dp, end = 8.dp, bottom = 16.dp),
-            backdrop = backdrop
-        ) {
-            val titleText = when (currentPage) {
-                ZenPage.QUOTES -> "Quotes"
-                ZenPage.ACTIONS -> "1-min Actions"
-                ZenPage.POMODORO -> "Focus"
+            Row(
+                modifier = Modifier
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .padding(start = 8.dp, end = 8.dp, bottom = 16.dp)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                ZenTextCard(
+                    text = if (selectedCount == 0) "Select Item" else "$selectedCount Selected",
+                    backdrop = backdrop
+                )
+                ZenTextCard(
+                    text = if (isAllSelected) "Deselect all" else "Select all",
+                    backdrop = backdrop,
+                    onClick = onToggleSelectAll
+                )
             }
+        } else if (!isAddingItem) {
+            GlassCard(
+                modifier = Modifier
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .padding(start = 8.dp, end = 8.dp, bottom = 16.dp),
+                backdrop = backdrop
+            ) {
+                val titleText = when (currentPage) {
+                    ZenPage.QUOTES -> "Quotes"
+                    ZenPage.ACTIONS -> "1-min Actions"
+                    ZenPage.POMODORO -> "Focus"
+                }
 
-            Text(
-                text = titleText,
-                color = Color.White,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
+                Text(
+                    text = titleText,
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }
@@ -261,59 +295,75 @@ fun ZenBottomBar(
             .windowInsetsPadding(WindowInsets.navigationBars)
             .padding(start = 8.dp, end = 8.dp)
     ) {
-        if (isSelectionMode) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                ZenTextCard(
-                    text = "Cancel",
-                    backdrop = backdrop,
-                    modifier = Modifier.weight(1f),
-                    textModifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    onClick = onCancel
-                )
-
-                ZenTextCard(
-                    text = "Delete",
-                    textColor = Color(0xFFFF5252),
-                    backdrop = backdrop,
-                    modifier = Modifier.weight(1f),
-                    textModifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    onClick = onDelete
-                )
-            }
-        } else if (!isAddingItem) {
-            GlassCard(
-                modifier = Modifier.fillMaxWidth(),
-                backdrop = backdrop
-            ) {
+        AnimatedContent(
+            targetState = isSelectionMode,
+            transitionSpec = { ZenAnimations.bottomTransition },
+            contentAlignment = Alignment.BottomCenter,
+            label = "ZenBottomBarTransition"
+        ) { selectionActive ->
+            if (selectionActive) {
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 4.dp, end = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    ZenNavItem(onClick = { onNavigate(ZenPage.QUOTES) }, isSelected = currentPage == ZenPage.QUOTES) {
-                        tint -> Icon(
-                            painter = painterResource(id = R.drawable.ic_symbol_chat_bubble),
-                            contentDescription = "Quotes",
-                            modifier = Modifier.size(28.dp),
-                            tint = tint
-                        )
-                    }
-                    ZenNavItem(onClick = { onNavigate(ZenPage.QUOTES) }, isSelected = currentPage == ZenPage.ACTIONS) {
-                        tint -> OneMinActionLogo(tint)
-                    }
-                    ZenNavItem(onClick = { onNavigate(ZenPage.POMODORO) }, isSelected = currentPage == ZenPage.POMODORO) {
-                        tint -> Icon(
-                            painter = painterResource(id = R.drawable.ic_symbol_hourglass),
-                            contentDescription = "Pomodoro Timer",
-                            modifier = Modifier.size(28.dp),
-                            tint = tint
-                        )
+                    ZenTextCard(
+                        text = "Cancel",
+                        backdrop = backdrop,
+                        modifier = Modifier.weight(1f),
+                        textModifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        onClick = onCancel
+                    )
+
+                    ZenTextCard(
+                        text = "Delete",
+                        textColor = Color(0xFFFF5252),
+                        backdrop = backdrop,
+                        modifier = Modifier.weight(1f),
+                        textModifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        onClick = onDelete
+                    )
+                }
+            } else if (!isAddingItem) {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    backdrop = backdrop
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 4.dp, end = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        ZenNavItem(
+                            onClick = { onNavigate(ZenPage.QUOTES) },
+                            isSelected = currentPage == ZenPage.QUOTES
+                        ) { tint ->
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_symbol_chat_bubble),
+                                contentDescription = "Quotes",
+                                modifier = Modifier.size(28.dp),
+                                tint = tint
+                            )
+                        }
+                        ZenNavItem(
+                            onClick = { onNavigate(ZenPage.ACTIONS) },
+                            isSelected = currentPage == ZenPage.ACTIONS
+                        ) { tint ->
+                            OneMinActionLogo(tint)
+                        }
+                        ZenNavItem(
+                            onClick = { onNavigate(ZenPage.POMODORO) },
+                            isSelected = currentPage == ZenPage.POMODORO
+                        ) { tint ->
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_symbol_hourglass),
+                                contentDescription = "Pomodoro Timer",
+                                modifier = Modifier.size(28.dp),
+                                tint = tint
+                            )
+                        }
                     }
                 }
             }
@@ -486,20 +536,12 @@ fun ZenPagerContent(
 
                                 AnimatedVisibility(
                                     visible = isSelectionMode,
-                                    enter =
-                                        fadeIn(
-                                            animationSpec = tween(durationMillis = 200)
-                                        ) + slideInHorizontally(
-                                            animationSpec = tween(durationMillis = 200)) { fullWidth ->
-                                            fullWidth
-                                        },
-                                    exit =
-                                        fadeOut(
-                                            animationSpec = tween(durationMillis = 200)
-                                        ) + slideOutHorizontally(
-                                            animationSpec = tween(durationMillis = 200)) { fullWidth ->
-                                            200
-                                        },
+                                    enter = ZenAnimations.zenFadeIn + slideInHorizontally(
+                                        animationSpec = ZenAnimations.slideSpec
+                                    ) { it },
+                                    exit = ZenAnimations.zenFadeOut + slideOutHorizontally(
+                                        animationSpec = ZenAnimations.slideSpec
+                                    ) { 200 }
                                 ) {
                                     CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides Dp.Unspecified) {
                                         Checkbox(
