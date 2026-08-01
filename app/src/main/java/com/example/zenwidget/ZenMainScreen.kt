@@ -206,7 +206,8 @@ fun ZenMainScreen() {
                 } else {
                     ZenPagerContent(
                         pagerState = pagerState,
-                        currentItems = currentItems,
+                        quotes = quotes,
+                        actions = actions,
                         backdrop = backdrop,
                         isSelectionMode = isSelectionMode,
                         selectedItems = selectedItems,
@@ -224,7 +225,8 @@ fun ZenMainScreen() {
                         onEdit = { item ->
                             itemToEdit = item
                             isEditorOpen = true
-                        })
+                        }
+                    )
                 }
             }
         }
@@ -479,7 +481,8 @@ fun ZenFab(
 @Composable
 fun ZenPagerContent(
     pagerState: PagerState,
-    currentItems: List<RepoItem>,
+    quotes: List<RepoItem>,
+    actions: List<RepoItem>,
     backdrop: LayerBackdrop,
     isSelectionMode: Boolean,
     selectedItems: Set<Any>,
@@ -489,10 +492,16 @@ fun ZenPagerContent(
 ) {
     HorizontalPager(
         state = pagerState,
+        modifier = Modifier.fillMaxSize(),
         userScrollEnabled = !isSelectionMode,
-        modifier = Modifier.fillMaxSize()
+        beyondViewportPageCount = 1
     ) { pageIdx ->
         val page = ZenPage.entries.getOrElse(pageIdx) { ZenPage.QUOTES }
+        val pageItems = when (page) {
+            ZenPage.QUOTES -> quotes
+            ZenPage.ACTIONS -> actions
+            ZenPage.POMODORO -> emptyList()
+        }
 
         when (page) {
             ZenPage.QUOTES, ZenPage.ACTIONS -> {
@@ -501,7 +510,7 @@ fun ZenPagerContent(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    val reversedItems = currentItems.asReversed()
+                    val reversedItems = pageItems.asReversed()
 
                     items(reversedItems.size) { index ->
                         val item = reversedItems[index]
