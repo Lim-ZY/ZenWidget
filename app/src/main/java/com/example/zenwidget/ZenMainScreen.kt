@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -33,6 +34,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -494,7 +496,11 @@ fun ZenPagerContent(
         state = pagerState,
         modifier = Modifier.fillMaxSize(),
         userScrollEnabled = !isSelectionMode,
-        beyondViewportPageCount = 1
+        beyondViewportPageCount = 1,
+        flingBehavior = PagerDefaults.flingBehavior(
+            state = pagerState,
+            decayAnimationSpec = exponentialDecay(0.5f)
+        )
     ) { pageIdx ->
         val page = ZenPage.entries.getOrElse(pageIdx) { ZenPage.QUOTES }
         val pageItems = when (page) {
